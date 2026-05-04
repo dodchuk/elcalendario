@@ -7,7 +7,7 @@ import { theme } from "../theme/colors";
 const pad = (n: number) => n.toString().padStart(2, "0");
 const SLOTS = Array.from({ length: 96 }, (_, i) => `${pad(Math.floor(i / 4))}:${pad((i % 4) * 15)}`);
 const ROW_H = 36;
-const R = 18;
+const R = 21;
 
 type Props = { date: string; filter: string | null };
 
@@ -77,7 +77,7 @@ export default function DayTimeline({ date, filter }: Props) {
     activeIds.forEach((id) => {
       const time = tagSlot[id];
       if (time) {
-        tx.push(60);
+        tx.push(80);
         ty.push(SLOTS.indexOf(time) * ROW_H + ROW_H / 2);
         af.push(1);
       } else {
@@ -223,7 +223,7 @@ export default function DayTimeline({ date, filter }: Props) {
           const isHour = time.endsWith(":00");
           const hasEmoji = !!slotMap[time];
           return (
-            <Pressable key={time} style={[st.row, isHour && st.rowHour]} onPress={() => assignToSlot(time)}>
+            <Pressable key={time} style={[st.row, isHour && st.rowHour, hasEmoji && st.rowAssigned]} onPress={() => assignToSlot(time)}>
               <Text style={[st.time, isHour && st.timeHour, hasEmoji && st.timeAssigned]}>{time}</Text>
             </Pressable>
           );
@@ -270,14 +270,16 @@ const st = StyleSheet.create({
     shadowColor: "#ff8c00", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10,
   },
   floatSelected: {
-    borderWidth: 2, borderColor: theme.accent,
+    backgroundColor: "rgba(234,179,8,0.3)",
+    shadowColor: theme.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8,
   },
-  floatTxt: { fontSize: 16 },
+  floatTxt: { fontSize: 20 },
   row: {
     height: ROW_H, flexDirection: "row", alignItems: "center",
     paddingLeft: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
   },
   rowHour: { borderBottomColor: theme.borderMuted },
+  rowAssigned: { backgroundColor: "rgba(255,140,0,0.08)" },
   time: { fontSize: 11, color: theme.fgMuted, width: 44, fontVariant: ["tabular-nums"] },
   timeHour: { fontWeight: "600", color: theme.fg },
   timeAssigned: { color: "#ff8c00", fontWeight: "700" },

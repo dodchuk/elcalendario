@@ -101,6 +101,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                 isToday && st.today,
                 cursor === d && st.cursor,
                 isOpen && st.selected,
+                isOpen && isToday && { borderColor: "rgba(255,255,255,0.9)" },
                 isFuture && st.future,
                 inStreak ? st.streakCell : null,
                 hasFiltered ? st.filteredCell : null,
@@ -113,13 +114,13 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
             >
               <View style={[
                 st.dateNum,
+                cursor === d && !isToday && st.dateNumCursor,
                 isToday && st.dateNumToday,
-                cursor === d && st.dateNumCursor,
               ]}>
                 <Text style={[
                   st.dateNumTxt,
+                  cursor === d && !isToday && st.dateNumCursorTxt,
                   isToday && st.dateNumTodayTxt,
-                  cursor === d && st.dateNumCursorTxt,
                 ]}>{d}</Text>
               </View>
 
@@ -167,12 +168,13 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
 
           if (cursor !== d) return cell;
 
-          // Multi-ring glow: 4 concentric gold rings with dark gaps
+          // Multi-ring glow
+          const ringColor = isToday ? "rgba(255,255,255," : "rgba(234,179,8,";
           return (
-            <View key={d} style={st.ring4}>
-              <View style={st.ring3}>
-                <View style={st.ring2}>
-                  <View style={st.ring1}>
+            <View key={d} style={[st.ring4, { borderColor: ringColor + "0.2)" }]}>
+              <View style={[st.ring3, { borderColor: ringColor + "0.4)" }]}>
+                <View style={[st.ring2, { borderColor: ringColor + "0.55)" }]}>
+                  <View style={[st.ring1, { borderColor: ringColor + "0.7)" }]}>
                     {cell}
                   </View>
                 </View>
@@ -301,6 +303,7 @@ const st = StyleSheet.create({
     flex: 1,
     width: "100%",
     aspectRatio: undefined,
+    borderWidth: 0,
   },
   future: {
     opacity: 0.3,
@@ -326,7 +329,7 @@ const st = StyleSheet.create({
     backgroundColor: theme.surfaceHover,
     borderWidth: 1,
     borderColor: theme.border,
-    zIndex: 1,
+    zIndex: 20,
   },
   dateNumTxt: {
     fontSize: 12,

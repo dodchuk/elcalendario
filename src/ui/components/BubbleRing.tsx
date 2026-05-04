@@ -4,7 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, useFrameCallback, type Shar
 import { theme } from "../theme/colors";
 
 type Bubble = { id: string; emoji: string; active: boolean; time?: string };
-const R = 18;
+const R = 21;
 
 function homePos(i: number, n: number, r: number, col: number) {
   const shift = col === 0 ? r * 0.35 : col === 6 ? -r * 0.35 : 0;
@@ -47,6 +47,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3 }: {
   const homeYs = useSharedValue(homes.map(h => h.y));
   const count = useSharedValue(n);
   const bound = useSharedValue(ringR * 1.2);
+  const leftBound = useSharedValue(-ringR * 1.2);
+  const rightBound = useSharedValue(ringR * 1.2);
 
   useEffect(() => {
     const h = bubbles.map((_, i) => homePos(i, bubbles.length, ringR, col));
@@ -54,6 +56,9 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3 }: {
     homeYs.value = h.map(p => p.y);
     count.value = bubbles.length;
     bound.value = ringR * 1.2;
+    // Asymmetric X bounds for edge columns
+    leftBound.value = col === 0 ? -ringR * 0.3 : -ringR * 1.2;
+    rightBound.value = col === 6 ? ringR * 0.7 : ringR * 1.2;
   }, [bubbles.length, ringR, col]);
 
   useFrameCallback(() => {
@@ -87,8 +92,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3 }: {
         avy[i] += (ay[i] / cd) * push;
       }
       // Bounds
-      if (ax[i] < -bnd) avx[i] += 0.1 * (-bnd - ax[i]);
-      if (ax[i] > bnd) avx[i] += 0.1 * (bnd - ax[i]);
+      if (ax[i] < leftBound.value) avx[i] += 0.1 * (leftBound.value - ax[i]);
+      if (ax[i] > rightBound.value) avx[i] += 0.1 * (rightBound.value - ax[i]);
       if (ay[i] < -bnd) avy[i] += 0.1 * (-bnd - ay[i]);
       if (ay[i] > bnd) avy[i] += 0.1 * (bnd - ay[i]);
     }
@@ -149,33 +154,27 @@ const st = StyleSheet.create({
     borderRadius: R,
     alignItems: "center",
     justifyContent: "center",
-    // Glass bubble effect (web: radial-gradient + box-shadow + backdrop-filter)
     backgroundColor: "rgba(230,235,245,0.2)",
-    borderWidth: 0.5,
-    borderColor: "rgba(255,255,255,0.3)",
-    shadowColor: "rgba(0,0,0,0.15)",
+    shadowColor: "#000",
     shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
   },
   bubActive: {
-    // Web: rgba(255,140,0,0.18) bg + orange multi-layer drop-shadow + saturate
-    backgroundColor: "rgba(255,140,0,0.22)",
-    borderColor: "rgba(255,140,0,0.4)",
-    shadowColor: "#ff8c00",
+    backgroundColor: "rgba(255,100,0,0.5)",
+    shadowColor: "#ff6400",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 16,
-    transform: [{ scale: 1.25 }],
+    shadowOpacity: 1,
+    shadowRadius: 14,
   },
   bubInactive: {
     opacity: 0.8,
   },
-  bubTxt: { fontSize: 20 },
+  bubTxt: { fontSize: 22 },
   timeBadge: {
     position: "absolute",
-    bottom: -6,
-    right: -10,
+    bottom: -10,
+    right: -14,
     backgroundColor: theme.surfaceHover,
     borderRadius: 4,
     paddingHorizontal: 4,
