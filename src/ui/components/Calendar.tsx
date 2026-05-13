@@ -40,7 +40,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
   const { state, dispatch } = useStore();
   const today = todayStr();
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map((t) => [t.id, t])), [state.tags]);
-  const [openCell, setOpenCell] = useState<string | null>(null);
+  const [openCell, setOpenCell] = useState<string | null>(today);
   const [cursor, setCursor] = useState<number>(new Date().getDate());
   const [cellSize, setCellSize] = useState(44);
 
@@ -142,7 +142,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                 st.cell,
                 isToday && st.today,
                 isOpen && st.selected,
-                isOpen && isToday && { borderColor: "rgba(255,255,255,0.9)" },
+                isOpen && isToday && { borderColor: "transparent" },
                 isFuture && st.future,
                 inStreak ? st.streakCell : null,
                 hasFiltered ? st.filteredCell : null,
@@ -314,7 +314,7 @@ const st = StyleSheet.create({
   },
   today: {
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderColor: "rgba(255,255,255,0.4)",
+    borderColor: "transparent",
   },
   selected: {
     overflow: "visible",

@@ -93,6 +93,7 @@ function Main() {
             <Ionicons name={tab === "emojis" ? "happy" : "happy-outline"} size={22} color={tab === "emojis" ? "#fff" : theme.fgMuted} />
           </View>
           <Text style={[st.tabLabel, tab === "emojis" && st.tabLabelActive]}>Emojis</Text>
+          <View style={st.tabCountBadge}><Text style={st.tabCountTxt}>{state.tags.length}</Text></View>
         </Pressable>
         <Pressable style={st.tabCenter} onPress={() => { setTab("calendar"); setShowProfile(false); }}>
           <View style={[st.tabCenterCircle, tab === "calendar" && st.tabCenterActive]}>
@@ -254,11 +255,19 @@ const st = StyleSheet.create({
   },
   tabBubble: {
     width: 42, height: 42, borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(230,235,245,0.2)",
     alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   tabBubbleActive: {
-    backgroundColor: "#ff3b30",
+    backgroundColor: "rgba(255,100,0,0.5)",
+    shadowColor: "#ff6400",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 14,
   },
   tabIcon: { fontSize: 18, color: theme.fgMuted },
   tabIconActive: { color: theme.fg },
@@ -285,4 +294,17 @@ const st = StyleSheet.create({
   },
   tabLabel: { fontSize: 10, color: theme.fgMuted, fontWeight: "500" },
   tabLabelActive: { color: theme.fg, fontWeight: "700" },
+  tabCountBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#ff3b30",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  tabCountTxt: { fontSize: 10, color: "#fff", fontWeight: "700" },
 });
