@@ -250,7 +250,7 @@ const st = StyleSheet.create({
   wrap: {
     backgroundColor: theme.surface,
     borderWidth: 1, borderColor: theme.border, borderRadius: 12,
-    marginTop: 12, overflow: "hidden", maxHeight: 400,
+    marginTop: 0, overflow: "hidden", maxHeight: 320,
   },
   scroll: { flex: 1 },
   bubLayer: {

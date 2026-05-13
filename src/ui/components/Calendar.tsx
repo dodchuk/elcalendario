@@ -100,7 +100,6 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
               style={[
                 st.cell,
                 isToday && st.today,
-                cursor === d && st.cursor,
                 isOpen && st.selected,
                 isOpen && isToday && { borderColor: "rgba(255,255,255,0.9)" },
                 isFuture && st.future,
@@ -159,7 +158,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                   <BubbleRing
                     key={ds}
                     bubbles={state.tags.map((t) => ({ id: t.id, emoji: t.emoji, active: activeIds.includes(t.id), time: activeIds.includes(t.id) ? timeMap[t.id] : undefined }))}
-                    ringR={Math.max(cellSize * 0.3, cellSize * 0.1 + state.tags.length * 2)}
+                    ringR={Math.min(Math.max(cellSize * 0.3, state.tags.length * 12), cellSize * 3)}
                     col={(offset + d - 1) % 7}
                     label={String(d)}
                     onToggle={(id) => dispatch({ type: "TOGGLE_EMOJI", date: ds, tagId: id })}
@@ -171,19 +170,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
 
           if (cursor !== d) return cell;
 
-          // Multi-ring glow
-          const ringColor = isToday ? "rgba(255,255,255," : "rgba(234,179,8,";
-          return (
-            <View key={d} style={[st.ring4, { borderColor: ringColor + "0.2)" }]}>
-              <View style={[st.ring3, { borderColor: ringColor + "0.4)" }]}>
-                <View style={[st.ring2, { borderColor: ringColor + "0.55)" }]}>
-                  <View style={[st.ring1, { borderColor: ringColor + "0.7)" }]}>
-                    {cell}
-                  </View>
-                </View>
-              </View>
-            </View>
-          );
+          return cell;
         })}
       </View>
     </View>
@@ -262,9 +249,6 @@ const st = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.4)",
   },
   selected: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "rgba(234,179,8,0.9)",
     overflow: "visible",
     zIndex: 10,
   },

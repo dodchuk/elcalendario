@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, ScrollView, View, Text, Pressable } from "react-native";
+import { StyleSheet, ScrollView, View, Text, Pressable, Platform } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StoreProvider } from "./src/application/StoreContext";
@@ -13,8 +13,8 @@ import WelcomeScreen from "./src/ui/screens/WelcomeScreen";
 import SignInScreen from "./src/ui/screens/SignInScreen";
 import SignUpScreen from "./src/ui/screens/SignUpScreen";
 import FindAccountScreen from "./src/ui/screens/FindAccountScreen";
-import SplashScreen from "./src/ui/screens/SplashScreen";
 import ProfileScreen from "./src/ui/screens/ProfileScreen";
+import ScreenProgressBar from "./src/ui/components/ScreenProgressBar";
 import { theme } from "./src/ui/theme/colors";
 
 function pad(n: number) { return n.toString().padStart(2, "0"); }
@@ -104,30 +104,31 @@ type AuthScreen = "welcome" | "signin" | "signup" | "find";
 
 function AuthFlow() {
   const [screen, setScreen] = useState<AuthScreen>("welcome");
+  const [transitioning, setTransitioning] = useState(false);
 
-  switch (screen) {
-    case "welcome": return <WelcomeScreen onSignIn={() => setScreen("signin")} onSignUp={() => setScreen("signup")} />;
-    case "signin": return <SignInScreen onBack={() => setScreen("welcome")} onFindAccount={() => setScreen("find")} />;
-    case "signup": return <SignUpScreen onBack={() => setScreen("welcome")} />;
-    case "find": return <FindAccountScreen onBack={() => setScreen("signin")} />;
-  }
+  const navigate = (to: AuthScreen) => {
+    setTransitioning(true);
+    setTimeout(() => { setScreen(to); setTransitioning(false); }, 350);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScreenProgressBar active={transitioning} />
+      {screen === "welcome" && <WelcomeScreen onSignIn={() => navigate("signin")} onSignUp={() => navigate("signup")} />}
+      {screen === "signin" && <SignInScreen onBack={() => navigate("welcome")} onFindAccount={() => navigate("find")} />}
+      {screen === "signup" && <SignUpScreen onBack={() => navigate("welcome")} />}
+      {screen === "find" && <FindAccountScreen onBack={() => navigate("signin")} />}
+    </View>
+  );
 }
 
 function Root() {
   const { user } = useAuth();
-  const [showSplash, setShowSplash] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (showSplash) return <SplashScreen />;
   return user ? <Main /> : <AuthFlow />;
 }
 
 export default function App() {
-  return (
+  const inner = (
     <GestureHandlerRootView style={st.root}>
       <SafeAreaProvider>
         <AuthProvider>
@@ -141,29 +142,47 @@ export default function App() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+
+  if (Platform.OS === "web") {
+    return <View style={st.webFrame}>{inner}</View>;
+  }
+  return inner;
 }
 
 const st = StyleSheet.create({
-  root: { flex: 1 },
+  webFrame: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#000",
+  },
+  root: { flex: 1, width: 393, maxWidth: 393, height: 852, maxHeight: 852, overflow: "hidden", borderRadius: 20 },
   container: { flex: 1, backgroundColor: theme.bg },
   main: { flex: 1 },
   body: { flex: 1 },
   scroll: { flex: 1 },
-  content: { padding: 16, paddingBottom: 24 },
+  content: { padding: 16, paddingBottom: 24, gap: 16 },
   tabBar: {
     flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    borderRadius: 16,
     backgroundColor: theme.surface,
-    paddingBottom: 20, // safe area bottom
-    paddingTop: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  tabLabel: { fontSize: 14, color: theme.fgMuted, fontWeight: "500" },
+  tabLabel: { fontSize: 13, color: theme.fgMuted, fontWeight: "500", letterSpacing: -0.2 },
   tabLabelActive: { color: theme.accent, fontWeight: "700" },
 });

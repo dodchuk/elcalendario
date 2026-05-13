@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Pressable, Text, StyleSheet, View } from "react-native";
+import { Pressable, Text, StyleSheet, View, Dimensions } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, useFrameCallback, type SharedValue } from "react-native-reanimated";
 import { theme } from "../theme/colors";
 
@@ -7,11 +7,27 @@ type Bubble = { id: string; emoji: string; active: boolean; time?: string };
 const R = 21;
 const GAP = 14;
 const MIN_DIST = R * 2 + GAP;
+const SW = Dimensions.get("window").width;
 
-function flowerPos(i: number, n: number, ringR: number) {
-  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55);
+function flowerPos(i: number, n: number, ringR: number, col: number) {
+  const extraSpace = (col === 0 || col === 6) ? 1.4 : 1;
+  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55) * extraSpace;
   const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-  return { x: Math.cos(angle) * orbitR, y: Math.sin(angle) * orbitR };
+  let x = Math.cos(angle) * orbitR;
+  const y = Math.sin(angle) * orbitR;
+
+  // Left columns: flip bubbles that go left to the right side
+  if (col <= 1) {
+    const limit = col === 0 ? 0 : -orbitR * 0.3;
+    if (x < limit) x = Math.abs(x);
+  }
+  // Right columns: flip bubbles that go right to the left side
+  if (col >= 5) {
+    const limit = col === 6 ? 0 : orbitR * 0.3;
+    if (x > limit) x = -Math.abs(x);
+  }
+
+  return { x, y };
 }
 
 function BubbleView({ index, xs, ys, bubble, isCenter, onToggle }: {
@@ -53,7 +69,7 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
   const n = bubbles.length;
 
   const makeHomes = (r: number) =>
-    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r));
+    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col));
 
   const homes = makeHomes(ringR);
 
@@ -66,9 +82,9 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
   const activeFlags = useSharedValue(all.map(b => b.active ? 1 : 0));
   const count = useSharedValue(all.length);
   const hasCenter = useSharedValue(label ? 1 : 0);
-  const bound = useSharedValue(ringR * 1.2);
-  const leftBound = useSharedValue(col === 0 ? -ringR * 0.3 : -ringR * 1.2);
-  const rightBound = useSharedValue(col === 6 ? ringR * 0.7 : ringR * 1.2);
+  const bound = useSharedValue(ringR - 20);
+  const leftBound = useSharedValue((col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20);
+  const rightBound = useSharedValue((col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20);
   const tick = useSharedValue(0);
 
   useEffect(() => {
@@ -81,9 +97,9 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
     vys.value = all.map(() => 0);
     count.value = all.length;
     hasCenter.value = label ? 1 : 0;
-    bound.value = ringR * 1.2;
-    leftBound.value = col === 0 ? -ringR * 0.3 : -ringR * 1.2;
-    rightBound.value = col === 6 ? ringR * 0.7 : ringR * 1.2;
+    bound.value = ringR - 20;
+    leftBound.value = (col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20;
+    rightBound.value = (col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20;
     activeFlags.value = all.map(b => b.active ? 1 : 0);
   }, [bubbles.length, ringR, col, label]);
 
