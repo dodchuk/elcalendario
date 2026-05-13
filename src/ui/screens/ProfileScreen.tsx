@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../application/AuthContext";
 import { theme } from "../theme/colors";
 
@@ -14,69 +15,116 @@ export default function ProfileScreen({ onClose }: Props) {
 
   return (
     <View style={st.container}>
-      <View style={st.header}>
-        <Text style={st.title}>Profile</Text>
-        <Pressable onPress={onClose}><Text style={st.close}>✕</Text></Pressable>
-      </View>
+      {/* Spotify-style hero gradient */}
+      <LinearGradient
+        colors={["rgba(251,191,36,0.6)", "rgba(251,191,36,0.2)", theme.bg, theme.bg]}
+        locations={[0, 0.35, 0.6, 1]}
+        style={st.heroGradient}
+      />
 
-      <View style={st.avatarWrap}>
-        <View style={st.avatar}>
-          <Text style={st.avatarTxt}>{nickname ? nickname[0].toUpperCase() : "?"}</Text>
+      <ScrollView style={st.scroll} contentContainerStyle={st.content}>
+        {/* Back button */}
+        <Pressable onPress={onClose} style={st.backBtn}>
+          <Text style={st.backTxt}>‹</Text>
+        </Pressable>
+
+        {/* Avatar hero section */}
+        <View style={st.hero}>
+          <View style={st.avatar}>
+            <Text style={st.avatarTxt}>{nickname ? nickname[0].toUpperCase() : "?"}</Text>
+          </View>
+          <Text style={st.name}>{nickname || "User"}</Text>
+          <Text style={st.meta}>{user?.email}</Text>
         </View>
-        <Text style={st.email}>{user?.email}</Text>
-      </View>
 
-      <Text style={st.label}>Nickname</Text>
-      <View style={st.inputRow}>
-        <Text style={st.at}>@</Text>
-        <TextInput style={st.input} value={nickname} onChangeText={setNickname}
-          placeholder="nickname" placeholderTextColor={theme.fgMuted} autoCapitalize="none" />
-      </View>
+        {/* Content section */}
+        <View style={st.section}>
+          <Text style={st.sectionTitle}>Edit Profile</Text>
 
-      <View style={st.actions}>
-        <Pressable style={st.cancelBtn} onPress={onClose}>
-          <Text style={st.cancelTxt}>Cancel</Text>
+          <Text style={st.label}>Nickname</Text>
+          <View style={st.inputRow}>
+            <Text style={st.at}>@</Text>
+            <TextInput style={st.input} value={nickname} onChangeText={setNickname}
+              placeholder="nickname" placeholderTextColor={theme.fgSubtle} autoCapitalize="none" />
+          </View>
+
+          <View style={st.actions}>
+            <Pressable style={st.saveBtn} onPress={handleSave}>
+              <Text style={st.saveTxt}>{saved ? "✓ Saved" : "Save"}</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <Pressable style={st.signOutBtn} onPress={signOut}>
+          <Text style={st.signOutTxt}>Log out</Text>
         </Pressable>
-        <Pressable style={st.saveBtn} onPress={handleSave}>
-          <Text style={st.saveTxt}>{saved ? "✓ Saved" : "Save"}</Text>
-        </Pressable>
-      </View>
-
-      <Pressable style={st.signOutBtn} onPress={signOut}>
-        <Text style={st.signOutTxt}>Sign Out</Text>
-      </Pressable>
+      </ScrollView>
     </View>
   );
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 32 },
-  title: { fontSize: 20, fontWeight: "700", color: theme.fg },
-  close: { fontSize: 18, color: theme.fgMuted },
-  avatarWrap: { alignItems: "center", marginBottom: 32 },
-  avatar: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: theme.accent,
-    alignItems: "center", justifyContent: "center", marginBottom: 12,
+  container: { flex: 1 },
+  heroGradient: {
+    position: "absolute",
+    top: 0, left: 0, right: 0,
+    height: 320,
   },
-  avatarTxt: { fontSize: 32, fontWeight: "700", color: "#000" },
-  email: { fontSize: 14, color: theme.fgMuted },
-  label: { fontSize: 13, fontWeight: "600", color: theme.fgMuted, marginBottom: 8 },
+  scroll: { flex: 1 },
+  content: { paddingBottom: 40 },
+  backBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center", justifyContent: "center",
+    marginLeft: 16, marginTop: 12,
+  },
+  backTxt: { fontSize: 20, color: "#fff", marginTop: -2 },
+  hero: {
+    alignItems: "center",
+    paddingTop: 20,
+    paddingBottom: 32,
+  },
+  avatar: {
+    width: 140, height: 140, borderRadius: 70,
+    backgroundColor: theme.accent,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+  },
+  avatarTxt: { fontSize: 56, fontWeight: "800", color: "#000" },
+  name: { fontSize: 28, fontWeight: "800", color: theme.fg, letterSpacing: -0.5 },
+  meta: { fontSize: 14, color: theme.fgMuted, marginTop: 4 },
+  section: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 18, fontWeight: "700", color: theme.fg,
+    marginBottom: 20,
+  },
+  label: { fontSize: 12, fontWeight: "600", color: theme.fgMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
   inputRow: {
     flexDirection: "row", alignItems: "center",
-    borderWidth: 1, borderColor: theme.border, borderRadius: 12,
-    paddingHorizontal: 14, marginBottom: 24,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: 8,
+    paddingHorizontal: 14, marginBottom: 20,
   },
   at: { fontSize: 16, color: theme.fgMuted, marginRight: 4 },
   input: { flex: 1, paddingVertical: 14, fontSize: 16, color: theme.fg },
-  actions: { flexDirection: "row", gap: 12 },
-  cancelBtn: {
-    flex: 1, borderWidth: 1, borderColor: theme.border, borderRadius: 12,
-    paddingVertical: 14, alignItems: "center",
+  actions: { flexDirection: "row" },
+  saveBtn: {
+    backgroundColor: theme.accent, borderRadius: 24,
+    paddingVertical: 14, paddingHorizontal: 40,
+    alignItems: "center",
   },
-  cancelTxt: { fontSize: 15, fontWeight: "600", color: theme.fg },
-  saveBtn: { flex: 1, backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  saveTxt: { fontSize: 15, fontWeight: "600", color: "#000" },
-  signOutBtn: { marginTop: 40, alignItems: "center", paddingVertical: 14 },
-  signOutTxt: { fontSize: 15, color: theme.danger, fontWeight: "500" },
+  saveTxt: { fontSize: 15, fontWeight: "700", color: "#000" },
+  signOutBtn: {
+    marginTop: 40, marginHorizontal: 24,
+    paddingVertical: 14, alignItems: "center",
+    borderWidth: 1, borderColor: theme.fgMuted, borderRadius: 24,
+  },
+  signOutTxt: { fontSize: 14, color: theme.fg, fontWeight: "600", letterSpacing: 0.3 },
 });

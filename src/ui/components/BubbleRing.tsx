@@ -8,13 +8,14 @@ const R = 21;
 const GAP = 14;
 const MIN_DIST = R * 2 + GAP;
 const SW = Dimensions.get("window").width;
+const SH = Dimensions.get("window").height;
 
-function flowerPos(i: number, n: number, ringR: number, col: number) {
+function flowerPos(i: number, n: number, ringR: number, col: number, row: number) {
   const extraSpace = (col === 0 || col === 6) ? 1.4 : 1;
   const orbitR = Math.max(R * 2 + GAP, ringR * 0.55) * extraSpace;
   const angle = (2 * Math.PI * i) / n - Math.PI / 2;
   let x = Math.cos(angle) * orbitR;
-  const y = Math.sin(angle) * orbitR;
+  let y = Math.sin(angle) * orbitR;
 
   // Left columns: flip bubbles that go left to the right side
   if (col <= 1) {
@@ -25,6 +26,15 @@ function flowerPos(i: number, n: number, ringR: number, col: number) {
   if (col >= 5) {
     const limit = col === 6 ? 0 : orbitR * 0.3;
     if (x > limit) x = -Math.abs(x);
+  }
+
+  // Top row: flip bubbles that go up to below
+  if (row === 0) {
+    if (y < 0) y = Math.abs(y);
+  }
+  // Bottom rows (3+): flip bubbles that go down to above
+  if (row >= 3) {
+    if (y > 0) y = -Math.abs(y);
   }
 
   return { x, y };
@@ -61,15 +71,15 @@ function BubbleView({ index, xs, ys, bubble, isCenter, onToggle }: {
   );
 }
 
-export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }: {
-  bubbles: Bubble[]; ringR: number; onToggle: (id: string) => void; col?: number; label?: string;
+export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2, label }: {
+  bubbles: Bubble[]; ringR: number; onToggle: (id: string) => void; col?: number; row?: number; label?: string;
 }) {
   const centerBubble: Bubble = { id: "__center__", emoji: label ?? "", active: false };
   const all = label ? [centerBubble, ...bubbles] : bubbles;
   const n = bubbles.length;
 
   const makeHomes = (r: number) =>
-    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col));
+    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col, row));
 
   const homes = makeHomes(ringR);
 
@@ -83,6 +93,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
   const count = useSharedValue(all.length);
   const hasCenter = useSharedValue(label ? 1 : 0);
   const bound = useSharedValue(ringR - 20);
+  const topBound = useSharedValue((row === 0 ? -ringR * 0.2 : row >= 3 ? -(SH * 0.4) : -ringR) + 20);
+  const bottomBound = useSharedValue((row >= 4 ? ringR * 0.2 : row === 3 ? ringR * 0.4 : row === 0 ? SH * 0.4 : ringR) - 20);
   const leftBound = useSharedValue((col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20);
   const rightBound = useSharedValue((col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20);
   const tick = useSharedValue(0);
@@ -98,6 +110,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
     count.value = all.length;
     hasCenter.value = label ? 1 : 0;
     bound.value = ringR - 20;
+    topBound.value = (row === 0 ? -ringR * 0.2 : row >= 3 ? -(SH * 0.4) : -ringR) + 20;
+    bottomBound.value = (row >= 4 ? ringR * 0.2 : row === 3 ? ringR * 0.4 : row === 0 ? SH * 0.4 : ringR) - 20;
     leftBound.value = (col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20;
     rightBound.value = (col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20;
     activeFlags.value = all.map(b => b.active ? 1 : 0);
@@ -110,7 +124,6 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
   useFrameCallback(() => {
     "worklet";
     const nn = count.value;
-    const bnd = bound.value;
     const ax = xs.value.slice();
     const ay = ys.value.slice();
     const avx = vxs.value.slice();
@@ -141,8 +154,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
 
       if (ax[i] < leftBound.value) avx[i] += 0.1 * (leftBound.value - ax[i]);
       if (ax[i] > rightBound.value) avx[i] += 0.1 * (rightBound.value - ax[i]);
-      if (ay[i] < -bnd) avy[i] += 0.1 * (-bnd - ay[i]);
-      if (ay[i] > bnd) avy[i] += 0.1 * (bnd - ay[i]);
+      if (ay[i] < topBound.value) avy[i] += 0.1 * (topBound.value - ay[i]);
+      if (ay[i] > bottomBound.value) avy[i] += 0.1 * (bottomBound.value - ay[i]);
     }
 
     for (let i = 0; i < nn; i++) {
@@ -209,11 +222,11 @@ const st = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.accent,
+    backgroundColor: "#ff3b30",
     borderWidth: 1,
-    borderColor: theme.accent,
+    borderColor: "#ff3b30",
   },
-  centerTxt: { fontSize: 12, fontWeight: "700", color: "#000" },
+  centerTxt: { fontSize: 12, fontWeight: "700", color: "#fff" },
   bub: {
     width: R * 2,
     height: R * 2,
@@ -237,8 +250,8 @@ const st = StyleSheet.create({
   bubTxt: { fontSize: 22 },
   timeBadge: {
     position: "absolute",
-    bottom: -10,
-    right: -14,
+    bottom: 2,
+    alignSelf: "center",
     backgroundColor: theme.surfaceHover,
     borderRadius: 4,
     paddingHorizontal: 4,

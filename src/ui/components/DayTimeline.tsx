@@ -266,8 +266,8 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.15)",
   },
   floatAssigned: {
-    backgroundColor: "rgba(255,140,0,0.18)",
-    shadowColor: "#ff8c00", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10,
+    backgroundColor: "rgba(255,100,0,0.18)",
+    shadowColor: "#ff6400", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10,
   },
   floatSelected: {
     backgroundColor: "rgba(234,179,8,0.3)",

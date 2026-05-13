@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { useStore } from "../../application/StoreContext";
 import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
@@ -7,6 +9,14 @@ import { theme } from "../theme/colors";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function getTimeGradient(): [string, string] {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 10) return ["#1a1020", "#3d1f2e"]; // morning/sunrise
+  if (h >= 10 && h < 17) return ["#1c1c1e", "#2a2518"]; // day/warm
+  if (h >= 17 && h < 21) return ["#0f1a2e", "#1a2a3d"]; // evening
+  return ["#0a0a12", "#12121e"]; // night
+}
 
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 function dateStr(y: number, m: number, d: number) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
@@ -60,14 +70,45 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
 
   const offset = startOff(year, month);
 
+  const waveX = useSharedValue(0);
+  const waveX2 = useSharedValue(1);
+  const waveX3 = useSharedValue(0.5);
+  useEffect(() => {
+    const d1 = 3000 + Math.random() * 4000;
+    const d2 = 4000 + Math.random() * 4000;
+    const d3 = 5000 + Math.random() * 5000;
+    waveX.value = withRepeat(withTiming(1, { duration: d1, easing: Easing.inOut(Easing.ease) }), -1, true);
+    waveX2.value = withRepeat(withTiming(0, { duration: d2, easing: Easing.inOut(Easing.ease) }), -1, true);
+    waveX3.value = withRepeat(withTiming(1, { duration: d3, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, []);
+  const waveStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -50 + waveX.value * 100 }, { translateY: -20 + waveX.value * 40 }],
+    opacity: 0.12 + waveX.value * 0.12,
+  }));
+  const waveStyle2 = useAnimatedStyle(() => ({
+    transform: [{ translateX: 50 - waveX2.value * 100 }, { translateY: 30 - waveX2.value * 50 }],
+    opacity: 0.08 + waveX2.value * 0.1,
+  }));
+  const waveStyle3 = useAnimatedStyle(() => ({
+    transform: [{ translateX: -30 + waveX3.value * 60 }, { translateY: -40 + waveX3.value * 80 }, { scale: 0.8 + waveX3.value * 0.4 }],
+    opacity: 0.06 + waveX3.value * 0.08,
+  }));
+
   return (
-    <View style={st.wrap}>
+    <LinearGradient colors={getTimeGradient()} style={st.wrap}>
+      <Animated.View style={[st.wave, waveStyle]} pointerEvents="none" />
+      <Animated.View style={[st.wave2, waveStyle2]} pointerEvents="none" />
+      <Animated.View style={[st.wave3, waveStyle3]} pointerEvents="none" />
       {/* Header */}
       <View style={st.header}>
+        <Pressable onPress={() => onNav(year - 1, month)} style={st.navBtn}><Text style={st.navTxt}>«</Text></Pressable>
         <Pressable onPress={prev} style={st.navBtn}><Text style={st.navTxt}>‹</Text></Pressable>
         <Text style={st.monthTitle}>{MONTHS[month]} {year}</Text>
         <Pressable onPress={next} style={[st.navBtn, isCurrentMonth && st.navDisabled]} disabled={isCurrentMonth}>
           <Text style={[st.navTxt, isCurrentMonth && { opacity: 0.2 }]}>›</Text>
+        </Pressable>
+        <Pressable onPress={() => onNav(year + 1, month)} style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]} disabled={year >= now.getFullYear()}>
+          <Text style={[st.navTxt, year >= now.getFullYear() && { opacity: 0.2 }]}>»</Text>
         </Pressable>
       </View>
 
@@ -160,6 +201,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                     bubbles={state.tags.map((t) => ({ id: t.id, emoji: t.emoji, active: activeIds.includes(t.id), time: activeIds.includes(t.id) ? timeMap[t.id] : undefined }))}
                     ringR={Math.min(Math.max(cellSize * 0.3, state.tags.length * 12), cellSize * 3)}
                     col={(offset + d - 1) % 7}
+                    row={Math.floor((offset + d - 1) / 7)}
                     label={String(d)}
                     onToggle={(id) => dispatch({ type: "TOGGLE_EMOJI", date: ds, tagId: id })}
                   />
@@ -173,17 +215,43 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
           return cell;
         })}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const st = StyleSheet.create({
   wrap: {
-    backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.border,
     borderRadius: 12,
     padding: 16,
+  },
+  wave: {
+    position: "absolute",
+    top: -40,
+    left: -40,
+    right: -40,
+    bottom: -40,
+    borderRadius: 200,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  wave2: {
+    position: "absolute",
+    top: -60,
+    left: -30,
+    right: -60,
+    bottom: -30,
+    borderRadius: 180,
+    backgroundColor: "rgba(255,200,100,0.03)",
+  },
+  wave3: {
+    position: "absolute",
+    top: -20,
+    left: -50,
+    right: -20,
+    bottom: -50,
+    borderRadius: 160,
+    backgroundColor: "rgba(150,180,255,0.03)",
   },
   header: {
     flexDirection: "row",
@@ -332,11 +400,11 @@ const st = StyleSheet.create({
     fontWeight: "700",
   },
   dateNumCursor: {
-    backgroundColor: theme.accent,
-    borderColor: theme.accent,
+    backgroundColor: "#ff3b30",
+    borderColor: "#ff3b30",
   },
   dateNumCursorTxt: {
-    color: "#000",
+    color: "#fff",
   },
   dateNumOpen: {
     backgroundColor: "transparent",
