@@ -24,11 +24,11 @@ function BubbleView({ index, xs, ys, bubble, isCenter, onToggle }: {
 
   if (isCenter) {
     return (
-      <Animated.View style={[st.bubWrap, animStyle, { zIndex: 10 }]}>
+      <View style={st.centerWrap}>
         <View style={st.centerBub}>
           <Text style={st.centerTxt}>{bubble.emoji}</Text>
         </View>
-      </Animated.View>
+      </View>
     );
   }
 
@@ -176,8 +176,16 @@ const st = StyleSheet.create({
   },
   bubWrap: {
     position: "absolute",
+    top: "50%",
+    left: "50%",
     width: R * 2,
     height: R * 2,
+  },
+  centerWrap: {
+    position: "absolute",
+    zIndex: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   centerBub: {
     width: 24,
@@ -188,8 +196,6 @@ const st = StyleSheet.create({
     backgroundColor: theme.accent,
     borderWidth: 1,
     borderColor: theme.accent,
-    marginLeft: R - 12,
-    marginTop: R - 12,
   },
   centerTxt: { fontSize: 12, fontWeight: "700", color: "#000" },
   bub: {
