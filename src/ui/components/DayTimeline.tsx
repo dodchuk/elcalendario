@@ -9,7 +9,7 @@ const SLOTS = Array.from({ length: 96 }, (_, i) => `${pad(Math.floor(i / 4))}:${
 const ROW_H = 36;
 const R = 21;
 
-type Props = { date: string; filter: string | null };
+type Props = { date: string; filter: string[] };
 
 function FloatBubbleView({ index, xs, ys, emoji, assigned, selected, onPress }: {
   index: number; xs: SharedValue<number[]>; ys: SharedValue<number[]>;
@@ -32,7 +32,7 @@ export default function DayTimeline({ date, filter }: Props) {
   const { state, dispatch } = useStore();
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map((t) => [t.id, t])), [state.tags]);
   const allActiveIds = useMemo(() => (state.entries[date] ?? []).filter((id) => tagMap[id]), [state.entries, date, tagMap]);
-  const activeIds = useMemo(() => filter ? allActiveIds.filter((id) => id === filter) : allActiveIds, [allActiveIds, filter]);
+  const activeIds = useMemo(() => filter.length ? allActiveIds.filter((id) => filter.includes(id)) : allActiveIds, [allActiveIds, filter]);
   const timeSlots = useMemo(() => {
     const slots = state.timeEntries?.[date] ?? [];
     return slots.filter((sl) => activeIds.includes(sl.tagId));

@@ -5,25 +5,39 @@ import { theme } from "../theme/colors";
 
 type Bubble = { id: string; emoji: string; active: boolean; time?: string };
 const R = 21;
+const GAP = 14;
+const MIN_DIST = R * 2 + GAP;
 
-function homePos(i: number, n: number, r: number, col: number) {
-  const shift = col === 0 ? r * 0.35 : col === 6 ? -r * 0.35 : 0;
+function flowerPos(i: number, n: number, ringR: number) {
+  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55);
   const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-  const wave = r * (1.0 + 0.3 * Math.sin(i * 2.5));
-  return { x: Math.cos(angle) * wave + shift, y: Math.sin(angle) * wave };
+  return { x: Math.cos(angle) * orbitR, y: Math.sin(angle) * orbitR };
 }
 
-function BubbleView({ index, xs, ys, bubble, onToggle }: {
+function BubbleView({ index, xs, ys, bubble, isCenter, onToggle }: {
   index: number; xs: SharedValue<number[]>; ys: SharedValue<number[]>;
-  bubble: Bubble; onToggle: (id: string) => void;
+  bubble: Bubble; isCenter: boolean; onToggle: (id: string) => void;
 }) {
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: (xs.value[index] ?? 0) - R }, { translateY: (ys.value[index] ?? 0) - R }],
   }));
 
+  if (isCenter) {
+    return (
+      <Animated.View style={[st.bubWrap, animStyle, { zIndex: 10 }]}>
+        <View style={st.centerBub}>
+          <Text style={st.centerTxt}>{bubble.emoji}</Text>
+        </View>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View style={[st.bubWrap, animStyle]}>
-      <Pressable style={[st.bub, bubble.active ? st.bubActive : st.bubInactive]} onPress={() => onToggle(bubble.id)}>
+      <Pressable
+        style={[st.bub, bubble.active ? st.bubActive : st.bubInactive]}
+        onPress={() => onToggle(bubble.id)}
+      >
         <Text style={st.bubTxt}>{bubble.emoji}</Text>
         {bubble.time && <View style={st.timeBadge}><Text style={st.timeTxt}>{bubble.time}</Text></View>}
       </Pressable>
@@ -31,35 +45,51 @@ function BubbleView({ index, xs, ys, bubble, onToggle }: {
   );
 }
 
-export default function BubbleRing({ bubbles, ringR, onToggle, col = 3 }: {
-  bubbles: Bubble[]; ringR: number; onToggle: (id: string) => void; col?: number;
+export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }: {
+  bubbles: Bubble[]; ringR: number; onToggle: (id: string) => void; col?: number; label?: string;
 }) {
+  const centerBubble: Bubble = { id: "__center__", emoji: label ?? "", active: false };
+  const all = label ? [centerBubble, ...bubbles] : bubbles;
   const n = bubbles.length;
-  const homes = bubbles.map((_, i) => homePos(i, n, ringR, col));
 
-  const xs = useSharedValue(homes.map(h => h.x));
-  const ys = useSharedValue(homes.map(h => h.y));
-  const vxs = useSharedValue(homes.map(() => (Math.random() - 0.5) * 0.3));
-  const vys = useSharedValue(homes.map(() => (Math.random() - 0.5) * 0.3));
+  const makeHomes = (r: number) =>
+    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r));
 
-  // Precompute homes as flat arrays for worklet access
+  const homes = makeHomes(ringR);
+
+  const xs = useSharedValue(all.map(() => 0));
+  const ys = useSharedValue(all.map(() => 0));
+  const vxs = useSharedValue(all.map(() => 0));
+  const vys = useSharedValue(all.map(() => 0));
   const homeXs = useSharedValue(homes.map(h => h.x));
   const homeYs = useSharedValue(homes.map(h => h.y));
-  const count = useSharedValue(n);
+  const activeFlags = useSharedValue(all.map(b => b.active ? 1 : 0));
+  const count = useSharedValue(all.length);
+  const hasCenter = useSharedValue(label ? 1 : 0);
   const bound = useSharedValue(ringR * 1.2);
-  const leftBound = useSharedValue(-ringR * 1.2);
-  const rightBound = useSharedValue(ringR * 1.2);
+  const leftBound = useSharedValue(col === 0 ? -ringR * 0.3 : -ringR * 1.2);
+  const rightBound = useSharedValue(col === 6 ? ringR * 0.7 : ringR * 1.2);
+  const tick = useSharedValue(0);
 
   useEffect(() => {
-    const h = bubbles.map((_, i) => homePos(i, bubbles.length, ringR, col));
+    const h = makeHomes(ringR);
     homeXs.value = h.map(p => p.x);
     homeYs.value = h.map(p => p.y);
-    count.value = bubbles.length;
+    xs.value = all.map(() => 0);
+    ys.value = all.map(() => 0);
+    vxs.value = all.map(() => 0);
+    vys.value = all.map(() => 0);
+    count.value = all.length;
+    hasCenter.value = label ? 1 : 0;
     bound.value = ringR * 1.2;
-    // Asymmetric X bounds for edge columns
     leftBound.value = col === 0 ? -ringR * 0.3 : -ringR * 1.2;
     rightBound.value = col === 6 ? ringR * 0.7 : ringR * 1.2;
-  }, [bubbles.length, ringR, col]);
+    activeFlags.value = all.map(b => b.active ? 1 : 0);
+  }, [bubbles.length, ringR, col, label]);
+
+  useEffect(() => {
+    activeFlags.value = all.map(b => b.active ? 1 : 0);
+  }, [bubbles.map(b => b.active).join(",")]);
 
   useFrameCallback(() => {
     "worklet";
@@ -71,53 +101,54 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3 }: {
     const avy = vys.value.slice();
     const hx = homeXs.value;
     const hy = homeYs.value;
+    const center = hasCenter.value;
+    const flags = activeFlags.value;
+    const t = tick.value + 1;
+    tick.value = t;
 
     for (let i = 0; i < nn; i++) {
+      if (i === 0 && center) {
+        ax[i] = 0; ay[i] = 0; avx[i] = 0; avy[i] = 0;
+        continue;
+      }
+
       const dx = hx[i] - ax[i], dy = hy[i] - ay[i];
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > 25) {
-        const pull = 0.005 * (dist - 25);
-        avx[i] += (dx / dist) * pull;
-        avy[i] += (dy / dist) * pull;
+      if (dist > 1) {
+        const pull = 0.018 * dist;
+        avx[i] += (dx / dist) * pull * 0.1;
+        avy[i] += (dy / dist) * pull * 0.1;
       }
-      avx[i] += (Math.random() - 0.5) * 0.06;
-      avy[i] += (Math.random() - 0.5) * 0.06;
-      avx[i] *= 0.98;
-      avy[i] *= 0.98;
-      // Center repulsion
-      const cd = Math.sqrt(ax[i] * ax[i] + ay[i] * ay[i]) || 0.1;
-      if (cd < 30) {
-        const push = 0.15 * (30 - cd);
-        avx[i] += (ax[i] / cd) * push;
-        avy[i] += (ay[i] / cd) * push;
-      }
-      // Bounds
+
+      avx[i] *= 0.88;
+      avy[i] *= 0.88;
+
       if (ax[i] < leftBound.value) avx[i] += 0.1 * (leftBound.value - ax[i]);
       if (ax[i] > rightBound.value) avx[i] += 0.1 * (rightBound.value - ax[i]);
       if (ay[i] < -bnd) avy[i] += 0.1 * (-bnd - ay[i]);
       if (ay[i] > bnd) avy[i] += 0.1 * (bnd - ay[i]);
     }
 
-    // Collision detection — pairwise overlap resolution + velocity exchange
     for (let i = 0; i < nn; i++) {
       for (let j = i + 1; j < nn; j++) {
         const dx = ax[j] - ax[i], dy = ay[j] - ay[i];
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-        if (dist < R * 2) {
+        if (dist < MIN_DIST) {
           const nx = dx / dist, ny = dy / dist;
-          const overlap = (R * 2 - dist) / 2;
-          ax[i] -= nx * overlap; ay[i] -= ny * overlap;
-          ax[j] += nx * overlap; ay[j] += ny * overlap;
-          const dot = (avx[i] - avx[j]) * nx + (avy[i] - avy[j]) * ny;
-          if (dot > 0) {
-            avx[i] -= 0.4 * dot * nx; avy[i] -= 0.4 * dot * ny;
-            avx[j] += 0.4 * dot * nx; avy[j] += 0.4 * dot * ny;
+          const push = (MIN_DIST - dist) * 0.3;
+          const iFixed = i === 0 && center;
+          if (iFixed) {
+            ax[j] += nx * push * 2; ay[j] += ny * push * 2;
+          } else {
+            ax[i] -= nx * push * 0.5; ay[i] -= ny * push * 0.5;
+            ax[j] += nx * push * 0.5; ay[j] += ny * push * 0.5;
           }
         }
       }
     }
 
     for (let i = 0; i < nn; i++) {
+      if (i === 0 && center) continue;
       ax[i] += avx[i];
       ay[i] += avy[i];
     }
@@ -130,8 +161,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3 }: {
 
   return (
     <View style={st.container} pointerEvents="box-none">
-      {bubbles.map((b, i) => (
-        <BubbleView key={b.id} index={i} xs={xs} ys={ys} bubble={b} onToggle={onToggle} />
+      {all.map((b, i) => (
+        <BubbleView key={b.id} index={i} xs={xs} ys={ys} bubble={b} isCenter={i === 0 && !!label} onToggle={onToggle} />
       ))}
     </View>
   );
@@ -148,6 +179,19 @@ const st = StyleSheet.create({
     width: R * 2,
     height: R * 2,
   },
+  centerBub: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.accent,
+    borderWidth: 1,
+    borderColor: theme.accent,
+    marginLeft: R - 12,
+    marginTop: R - 12,
+  },
+  centerTxt: { fontSize: 12, fontWeight: "700", color: "#000" },
   bub: {
     width: R * 2,
     height: R * 2,
@@ -167,9 +211,7 @@ const st = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 14,
   },
-  bubInactive: {
-    opacity: 0.8,
-  },
+  bubInactive: { opacity: 0.8 },
   bubTxt: { fontSize: 22 },
   timeBadge: {
     position: "absolute",

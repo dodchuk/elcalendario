@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from "react-native";
 import { useStore } from "../../application/StoreContext";
 import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
@@ -21,7 +21,7 @@ function ringPos(i: number, total: number, r: number) {
 type Props = {
   year: number; month: number;
   onNav: (y: number, m: number) => void;
-  filter: string | null;
+  filter: string[];
   streakRange: { start: string; end: string } | null;
   onSelectDate?: (date: string) => void;
 };
@@ -32,6 +32,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map((t) => [t.id, t])), [state.tags]);
   const [openCell, setOpenCell] = useState<string | null>(null);
   const [cursor, setCursor] = useState<number>(new Date().getDate());
+  const [cellSize, setCellSize] = useState(44);
 
   const total = daysIn(year, month);
 
@@ -89,7 +90,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
           const isOpen = openCell === ds;
           const isFuture = ds > today;
           const inStreak = streakRange && ds >= streakRange.start && ds <= streakRange.end;
-          const hasFiltered = filter && activeIds.includes(filter);
+          const hasFiltered = filter.length > 0 && activeIds.some(id => filter.includes(id));
           const hasTags = state.tags.length > 0;
           const r = Math.max(14, Math.min(22, 10 + state.tags.length * 2.5));
 
@@ -111,8 +112,9 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                 setCursor(d);
                 setOpenCell(isOpen ? null : ds);
               }}
+              onLayout={(e: LayoutChangeEvent) => { if (d === 1) setCellSize(e.nativeEvent.layout.width); }}
             >
-              <View style={[
+              {!isOpen && <View style={[
                 st.dateNum,
                 cursor === d && !isToday && st.dateNumCursor,
                 isToday && st.dateNumToday,
@@ -122,14 +124,14 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                   cursor === d && !isToday && st.dateNumCursorTxt,
                   isToday && st.dateNumTodayTxt,
                 ]}>{d}</Text>
-              </View>
+              </View>}
 
               {/* Mini emoji ring (closed state) */}
               {!isFuture && !isOpen && hasTags && state.tags.map((t, idx) => {
                 const p = ringPos(idx, state.tags.length, r);
                 const active = activeIds.includes(t.id);
-                const hidden = filter && t.id !== filter;
-                if (hidden) return null;
+                const hidden = filter.length > 0 && !filter.includes(t.id);
+                if (hidden || !active) return null;
                 return (
                   <Text
                     key={t.id}
@@ -143,8 +145,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                         fontSize: state.tags.length > 6 ? 8 : state.tags.length > 4 ? 10 : 13,
                       },
                     ]}
-                  >
-                    {active ? t.emoji : " "}
+                  >{t.emoji}
                   </Text>
                 );
               })}
@@ -156,9 +157,11 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                 for (const sl of dayTimeSlots) timeMap[sl.tagId] = sl.time;
                 return (
                   <BubbleRing
+                    key={ds}
                     bubbles={state.tags.map((t) => ({ id: t.id, emoji: t.emoji, active: activeIds.includes(t.id), time: activeIds.includes(t.id) ? timeMap[t.id] : undefined }))}
-                    ringR={Math.max(40, 16 + state.tags.length * 5)}
+                    ringR={Math.max(cellSize * 0.3, cellSize * 0.1 + state.tags.length * 2)}
                     col={(offset + d - 1) % 7}
+                    label={String(d)}
                     onToggle={(id) => dispatch({ type: "TOGGLE_EMOJI", date: ds, tagId: id })}
                   />
                 );
@@ -252,7 +255,7 @@ const st = StyleSheet.create({
     backgroundColor: theme.surfaceInset,
     borderWidth: 1,
     borderColor: "transparent",
-    overflow: "hidden",
+    overflow: "visible",
   },
   today: {
     backgroundColor: "rgba(255,255,255,0.08)",

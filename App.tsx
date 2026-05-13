@@ -1,13 +1,20 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, ScrollView, View, Text, Pressable } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StoreProvider } from "./src/application/StoreContext";
+import { AuthProvider, useAuth } from "./src/application/AuthContext";
 import TagManager from "./src/ui/components/TagManager";
 import Calendar from "./src/ui/components/Calendar";
-import Dashboard from "./src/ui/components/Dashboard";
+import Dashboard, { TagFilters, StreakPanel } from "./src/ui/components/Dashboard";
 import DayTimeline from "./src/ui/components/DayTimeline";
+import WelcomeScreen from "./src/ui/screens/WelcomeScreen";
+import SignInScreen from "./src/ui/screens/SignInScreen";
+import SignUpScreen from "./src/ui/screens/SignUpScreen";
+import FindAccountScreen from "./src/ui/screens/FindAccountScreen";
+import SplashScreen from "./src/ui/screens/SplashScreen";
+import ProfileScreen from "./src/ui/screens/ProfileScreen";
 import { theme } from "./src/ui/theme/colors";
 
 function pad(n: number) { return n.toString().padStart(2, "0"); }
@@ -15,16 +22,17 @@ function pad(n: number) { return n.toString().padStart(2, "0"); }
 type Tab = "emojis" | "calendar" | "dashboard";
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
-  { key: "emojis", icon: "😀", label: "Emojis" },
-  { key: "calendar", icon: "📅", label: "Calendar" },
-  { key: "dashboard", icon: "🏆", label: "Dashboard" },
+  { key: "emojis", icon: "✎", label: "Emojis" },
+  { key: "calendar", icon: "◻️", label: "Calendar" },
+  { key: "dashboard", icon: "◆", label: "Dashboard" },
 ];
 
 function Main() {
   const [tab, setTab] = useState<Tab>("calendar");
+  const [showProfile, setShowProfile] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
-  const [filter, setFilter] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string[]>([]);
   const [streakRange, setStreakRange] = useState<{ start: string; end: string } | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
@@ -35,6 +43,10 @@ function Main() {
 
   return (
     <View style={st.main}>
+      {showProfile ? (
+        <ProfileScreen onClose={() => setShowProfile(false)} />
+      ) : (
+        <>
       <View style={st.body}>
         {tab === "emojis" && (
           <ScrollView style={st.scroll} contentContainerStyle={st.content}>
@@ -52,11 +64,15 @@ function Main() {
         )}
         {tab === "dashboard" && (
           <ScrollView style={st.scroll} contentContainerStyle={st.content}>
+            <TagFilters
+              year={year} month={month} filter={filter} onFilter={setFilter}
+              streakRange={streakRange} onStreakRange={setStreakRange}
+            />
             <Calendar
               year={year} month={month} onNav={onNav}
               filter={filter} streakRange={streakRange} onSelectDate={setSelectedDate}
             />
-            <Dashboard
+            <StreakPanel
               year={year} month={month} filter={filter} onFilter={setFilter}
               streakRange={streakRange} onStreakRange={setStreakRange}
             />
@@ -70,26 +86,58 @@ function Main() {
           const active = tab === t.key;
           return (
             <Pressable key={t.key} style={st.tab} onPress={() => setTab(t.key)}>
-              <Text style={st.tabIcon}>{t.icon}</Text>
               <Text style={[st.tabLabel, active && st.tabLabelActive]}>{t.label}</Text>
             </Pressable>
           );
         })}
+        <Pressable style={st.tab} onPress={() => setShowProfile(true)}>
+          <Text style={st.tabLabel}>Profile</Text>
+        </Pressable>
       </View>
+      </>
+      )}
     </View>
   );
+}
+
+type AuthScreen = "welcome" | "signin" | "signup" | "find";
+
+function AuthFlow() {
+  const [screen, setScreen] = useState<AuthScreen>("welcome");
+
+  switch (screen) {
+    case "welcome": return <WelcomeScreen onSignIn={() => setScreen("signin")} onSignUp={() => setScreen("signup")} />;
+    case "signin": return <SignInScreen onBack={() => setScreen("welcome")} onFindAccount={() => setScreen("find")} />;
+    case "signup": return <SignUpScreen onBack={() => setScreen("welcome")} />;
+    case "find": return <FindAccountScreen onBack={() => setScreen("signin")} />;
+  }
+}
+
+function Root() {
+  const { user } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) return <SplashScreen />;
+  return user ? <Main /> : <AuthFlow />;
 }
 
 export default function App() {
   return (
     <GestureHandlerRootView style={st.root}>
       <SafeAreaProvider>
-        <StoreProvider>
-          <SafeAreaView style={st.container} edges={["top"]}>
-            <Main />
-            <StatusBar style="light" />
-          </SafeAreaView>
-        </StoreProvider>
+        <AuthProvider>
+          <StoreProvider>
+            <SafeAreaView style={st.container} edges={["top"]}>
+              <Root />
+              <StatusBar style="light" />
+            </SafeAreaView>
+          </StoreProvider>
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -113,9 +161,9 @@ const st = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 4,
+    justifyContent: "center",
+    paddingVertical: 12,
   },
-  tabIcon: { fontSize: 22 },
-  tabLabel: { fontSize: 10, color: theme.fgMuted, marginTop: 2 },
-  tabLabelActive: { color: theme.accent, fontWeight: "600" },
+  tabLabel: { fontSize: 14, color: theme.fgMuted, fontWeight: "500" },
+  tabLabelActive: { color: theme.accent, fontWeight: "700" },
 });
