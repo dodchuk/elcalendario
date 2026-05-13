@@ -149,9 +149,9 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, label }:
       for (let j = i + 1; j < nn; j++) {
         const dx = ax[j] - ax[i], dy = ay[j] - ay[i];
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-        if (dist < MIN_DIST) {
+        if (dist < MIN_DIST + 12) {
           const nx = dx / dist, ny = dy / dist;
-          const push = (MIN_DIST - dist) * 0.3;
+          const push = (MIN_DIST + 12 - dist) * 0.3;
           const iFixed = i === 0 && center;
           if (iFixed) {
             ax[j] += nx * push * 2; ay[j] += ny * push * 2;

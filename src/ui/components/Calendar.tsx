@@ -92,7 +92,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
           const inStreak = streakRange && ds >= streakRange.start && ds <= streakRange.end;
           const hasFiltered = filter.length > 0 && activeIds.some(id => filter.includes(id));
           const hasTags = state.tags.length > 0;
-          const r = Math.max(14, Math.min(22, 10 + state.tags.length * 2.5));
+          const r = Math.max(8, Math.min(14, 6 + state.tags.length * 1.5));
 
           const cell = (
             <Pressable
