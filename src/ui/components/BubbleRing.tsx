@@ -17,9 +17,9 @@ function flowerPos(i: number, n: number, ringR: number, col: number, row: number
     const angle = (2 * Math.PI * i) / n - Math.PI / 2;
     let x = Math.cos(angle) * orbitR;
     let y = Math.sin(angle) * orbitR;
-    // Same col/row rules but gentler
-    if (col === 0 && x < 0) x = Math.abs(x) * 0.6;
-    if (col === 6 && x > 0) x = -Math.abs(x) * 0.6;
+    // Edge columns: flip and keep full distance
+    if (col === 0 && x < 0) x = Math.abs(x);
+    if (col === 6 && x > 0) x = -Math.abs(x);
     if (row === 0 && y < 0) y = Math.abs(y) * 0.6;
     if (row >= 4 && y > 0) y = -Math.abs(y) * 0.6;
     return { x, y };
@@ -180,7 +180,6 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
       if (ay[i] > bottomBound.value) avy[i] += 0.1 * (bottomBound.value - ay[i]);
     }
 
-    if (nn > 6) {
     for (let i = 0; i < nn; i++) {
       for (let j = i + 1; j < nn; j++) {
         const dx = ax[j] - ax[i], dy = ay[j] - ay[i];
@@ -197,7 +196,6 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
           }
         }
       }
-    }
     }
 
     for (let i = 0; i < nn; i++) {
