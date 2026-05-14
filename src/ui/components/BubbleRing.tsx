@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Pressable, Text, StyleSheet, View, Dimensions } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, useFrameCallback, type SharedValue } from "react-native-reanimated";
 import { theme } from "../theme/colors";
+import { getEmojiGlowColor } from "../theme/tagColors";
 
 type Bubble = { id: string; emoji: string; active: boolean; time?: string };
 const R = 21;
@@ -54,8 +55,8 @@ function flowerPos(i: number, n: number, ringR: number, col: number, row: number
   return { x, y };
 }
 
-function BubbleView({ index, xs, ys, bubble, isCenter, onToggle }: {
-  index: number; xs: SharedValue<number[]>; ys: SharedValue<number[]>;
+function BubbleView({ index, tagIndex, xs, ys, bubble, isCenter, onToggle }: {
+  index: number; tagIndex: number; xs: SharedValue<number[]>; ys: SharedValue<number[]>;
   bubble: Bubble; isCenter: boolean; onToggle: (id: string) => void;
 }) {
   const animStyle = useAnimatedStyle(() => ({
@@ -72,10 +73,12 @@ function BubbleView({ index, xs, ys, bubble, isCenter, onToggle }: {
     );
   }
 
+  const glowColor = getEmojiGlowColor(bubble.emoji, tagIndex);
+
   return (
     <Animated.View style={[st.bubWrap, animStyle]}>
       <Pressable
-        style={[st.bub, bubble.active ? st.bubActive : st.bubInactive]}
+        style={[st.bub, bubble.active ? [st.bubActive, { backgroundColor: glowColor + "80", boxShadow: `0 0 14px ${glowColor}` } as any] : st.bubInactive]}
         onPress={() => onToggle(bubble.id)}
       >
         <Text style={st.bubTxt}>{bubble.emoji}</Text>
@@ -213,7 +216,7 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
   return (
     <View style={st.container} pointerEvents="box-none">
       {all.map((b, i) => (
-        <BubbleView key={b.id} index={i} xs={xs} ys={ys} bubble={b} isCenter={i === 0 && !!label} onToggle={onToggle} />
+        <BubbleView key={b.id} index={i} tagIndex={label ? i - 1 : i} xs={xs} ys={ys} bubble={b} isCenter={i === 0 && !!label} onToggle={onToggle} />
       ))}
     </View>
   );
@@ -261,13 +264,7 @@ const st = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
   },
-  bubActive: {
-    backgroundColor: "rgba(255,100,0,0.5)",
-    shadowColor: "#ff6400",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 14,
-  },
+  bubActive: {},
   bubInactive: { opacity: 0.8 },
   bubTxt: { fontSize: 22 },
   timeBadge: {

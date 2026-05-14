@@ -30,7 +30,7 @@ function MiniMonth({ year, month, onPress }: { year: number; month: number; onPr
           const hasEntry = (state.entries[ds] ?? []).length > 0;
           const isToday = isCurrentMonth && d === today.getDate();
           return (
-            <View key={d} style={[st.miniDay, isToday && st.miniToday, hasEntry && st.miniHasEntry]}>
+            <View key={d} style={[st.miniDay, hasEntry && st.miniHasEntry, isToday && st.miniToday]}>
               <Text style={[st.miniDayTxt, isToday && st.miniTodayTxt]}>{d}</Text>
             </View>
           );
@@ -106,13 +106,13 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   miniToday: {
-    backgroundColor: "#ff3b30",
+    backgroundColor: "#fff",
     borderRadius: 10,
   },
   miniHasEntry: {
-    backgroundColor: "rgba(255,100,0,0.2)",
+    backgroundColor: "rgba(255,255,255,0.2)",
     borderRadius: 10,
   },
   miniDayTxt: { fontSize: 7, color: theme.fgMuted },
-  miniTodayTxt: { color: "#fff", fontWeight: "700" },
+  miniTodayTxt: { color: "#000", fontWeight: "700" },
 });

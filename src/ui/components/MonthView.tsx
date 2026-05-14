@@ -7,6 +7,7 @@ import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
 import DayTimeline from "./DayTimeline";
 import { theme } from "../theme/colors";
+import { getEmojiGlowColor } from "../theme/tagColors";
 
 const SW = Dimensions.get("window").width;
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -60,12 +61,12 @@ function MonthBlock({ year, month, openDate, onSelectDate }: {
           return (
             <Pressable
               key={d}
-              style={[st.cell, isToday && st.cellToday, isFuture && st.cellFuture, isOpen && st.cellOpen]}
+              style={[st.cell, isToday && st.cellToday, isFuture && st.cellFuture, isOpen && st.cellOpen, openDate && !isOpen && st.cellSkeleton]}
               onPress={() => !isFuture && onSelectDate(isOpen ? "" : ds)}
               onLayout={e => { if (d === 1) setCellSize(e.nativeEvent.layout.width); }}
             >
               {!isOpen && (
-                <View style={[st.dateNum, isToday && st.dateNumToday, activeIds.length > 0 && st.dateNumGlow]}>
+                <View style={[st.dateNum, activeIds.length > 0 && st.dateNumHasEmoji, isToday && st.dateNumToday, activeIds.length > 0 && { boxShadow: `0 0 6px ${getEmojiGlowColor(tagMap[activeIds[0]]?.emoji ?? "", 0)}44` } as any]}>
                   <Text style={[st.dateNumTxt, isToday && st.dateNumTodayTxt]}>{d}</Text>
                 </View>
               )}
@@ -90,14 +91,16 @@ function MonthBlock({ year, month, openDate, onSelectDate }: {
                   {activeIds.slice(0, 6).map((id, idx) => {
                     const angle = (2 * Math.PI * idx) / Math.min(activeIds.length, 6) - Math.PI / 2;
                     const r = 14;
+                    const tagIdx = state.tags.findIndex(t => t.id === id);
+                    const glowColor = getEmojiGlowColor(tagMap[id]?.emoji ?? "", tagIdx);
                     return (
-                      <View key={id} style={[st.ringEmojiWrap, {
+                      <Text key={id} style={[st.ringEmoji, {
                         left: "50%",
                         top: "50%",
-                        transform: [{ translateX: Math.cos(angle) * r - 7 }, { translateY: Math.sin(angle) * r - 7 }],
-                      }]}>
-                        <Text style={st.ringEmoji}>{tagMap[id]?.emoji}</Text>
-                      </View>
+                        textShadowColor: glowColor,
+                        textShadowRadius: 6,
+                        transform: [{ translateX: Math.cos(angle) * r - 5 }, { translateY: Math.sin(angle) * r - 5 }],
+                      }]}>{tagMap[id]?.emoji}</Text>
                     );
                   })}
                 </>
@@ -144,7 +147,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
 
   useEffect(() => {
     const show = openDate && (state.entries[openDate] ?? []).length > 0;
-    calFlex.value = withTiming(show ? 1 : 1, { duration: 300, easing: Easing.out(Easing.ease) });
+    calFlex.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
     tlFlex.value = withTiming(show ? 1 : 0, { duration: 300, easing: Easing.out(Easing.ease) });
   }, [openDate, state.entries]);
 
@@ -162,7 +165,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   return (
-    <View style={st.container}>
+    <View style={[st.container, openDate && { backgroundColor: "rgba(0,0,0,0.5)" }]}>
       {/* Fixed header */}
       <View style={st.header}>
         <Pressable onPress={() => onBack(visibleYear)} style={st.backBtn}>
@@ -192,9 +195,10 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!hasEmojis}
           snapToInterval={320}
           decelerationRate="fast"
-          contentContainerStyle={{ paddingBottom: 300 }}
+          contentContainerStyle={{ paddingBottom: hasEmojis ? 320 : 40 }}
           style={{ flex: 1 }}
         />
       </Animated.View>
@@ -253,31 +257,17 @@ const st = StyleSheet.create({
   cellToday: { backgroundColor: "rgba(255,255,255,0.06)" },
   cellFuture: { opacity: 0.3 },
   cellOpen: { zIndex: 10, overflow: "visible" },
+  cellSkeleton: { opacity: 0.3 },
   dateNum: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
   },
   dateNumToday: { backgroundColor: "#fff" },
-  dateNumGlow: {
-    shadowColor: "#fff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-  },
+  dateNumHasEmoji: { backgroundColor: "rgba(255,255,255,0.2)" },
   dateNumOpen: {},
   dateNumTxt: { fontSize: 13, color: theme.fg, fontWeight: "400" },
   dateNumTodayTxt: { color: "#000", fontWeight: "700" },
-  ringEmojiWrap: {
-    position: "absolute",
-    width: 14, height: 14, borderRadius: 7,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,100,0,0.2)",
-    shadowColor: "#ff6400",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-  },
-  ringEmoji: { fontSize: 8 },
+  ringEmoji: { position: "absolute", fontSize: 8 },
   timelineWrap: {
     overflow: "hidden",
     borderTopLeftRadius: 16,
