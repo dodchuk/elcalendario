@@ -17,13 +17,19 @@ function flowerPos(i: number, n: number, ringR: number, col: number, row: number
   // First column: half circle on right side only
   if (col === 0) {
     const angle = -Math.PI / 2 + (Math.PI * i) / Math.max(n - 1, 1);
-    return { x: Math.cos(angle) * orbitR, y: Math.sin(angle) * orbitR };
+    const top = sp ? sp.y - 80 - R * 2 : 100;
+    let y = Math.sin(angle) * orbitR;
+    if (top < orbitR && y < 0) y = Math.abs(y);
+    return { x: Math.cos(angle) * orbitR, y };
   }
 
   // Last column: half circle on left side only
   if (col === 6) {
     const angle = Math.PI / 2 + (Math.PI * i) / Math.max(n - 1, 1);
-    return { x: Math.cos(angle) * orbitR, y: Math.sin(angle) * orbitR };
+    const top = sp ? sp.y - 80 - R * 2 : 100;
+    let y = Math.sin(angle) * orbitR;
+    if (top < orbitR && y < 0) y = Math.abs(y);
+    return { x: Math.cos(angle) * orbitR, y };
   }
 
   // Other columns: full circle with space-aware flipping

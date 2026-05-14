@@ -143,7 +143,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
       const [y, m] = ds.split("-").map(Number);
       const idx = months.findIndex(item => item.year === y && item.month === m - 1);
       if (idx === months.length - 1) {
-        const offset = Math.max(0, (idx + 1) * 320 - 200);
+        const offset = idx * 320;
         setTimeout(() => listRef.current?.scrollToOffset({ offset, animated: true }), 50);
       }
     } else {
