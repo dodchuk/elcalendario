@@ -9,7 +9,8 @@ import DayTimeline from "./DayTimeline";
 import { theme } from "../theme/colors";
 import { getEmojiGlowColor } from "../theme/tagColors";
 
-const SW = Dimensions.get("window").width;
+const SW = Math.min(Dimensions.get("window").width, 393);
+const SH = Math.min(Dimensions.get("window").height, 852);
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -33,8 +34,8 @@ function generateMonths(startYear: number, startMonth: number) {
 
 type Props = { initialYear: number; initialMonth: number; onBack: (year: number) => void };
 
-function MonthBlock({ year, month, openDate, onSelectDate }: {
-  year: number; month: number; openDate: string | null; onSelectDate: (ds: string) => void;
+function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
+  year: number; month: number; openDate: string | null; onSelectDate: (ds: string) => void; timelineOpen: boolean;
 }) {
   const { state, dispatch } = useStore();
   const today = todayStr();
@@ -74,6 +75,13 @@ function MonthBlock({ year, month, openDate, onSelectDate }: {
                 const dayTimeSlots = state.timeEntries?.[ds] ?? [];
                 const timeMap: Record<string, string> = {};
                 for (const sl of dayTimeSlots) timeMap[sl.tagId] = sl.time;
+                // Approximate screen position of cell center
+                const gridWidth = SW - 32; // 16px padding each side
+                const cellW = gridWidth * 0.135;
+                const cellX = 16 + col * (cellW + 2) + cellW / 2;
+                // Estimate screen Y: header ~80px, row position within visible area
+                const cellY = 80 + (row + 0.5) * (cellSize + 2);
+                const screenY = openDate ? Math.min(cellY, SH * 0.4) : cellY;
                 return (
                   <BubbleRing
                     key={ds}
@@ -82,6 +90,8 @@ function MonthBlock({ year, month, openDate, onSelectDate }: {
                     col={col}
                     row={row}
                     label={String(d)}
+                    screenPos={{ x: cellX, y: screenY }}
+                    visibleHeight={timelineOpen ? SH * 0.5 : SH}
                     onToggle={id => dispatch({ type: "TOGGLE_EMOJI", date: ds, tagId: id })}
                   />
                 );
@@ -129,10 +139,10 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
     if (ds) {
       setOpenDate(ds);
       setDisplayDate(ds);
-      // Scroll up by timeline height to keep content visible
+      // Scroll only if selecting in the last month
       const [y, m] = ds.split("-").map(Number);
       const idx = months.findIndex(item => item.year === y && item.month === m - 1);
-      if (idx >= 0) {
+      if (idx === months.length - 1) {
         const offset = Math.max(0, (idx + 1) * 320 - 200);
         setTimeout(() => listRef.current?.scrollToOffset({ offset, animated: true }), 50);
       }
@@ -190,7 +200,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           initialScrollIndex={initialIndex}
           getItemLayout={(_, index) => ({ length: 320, offset: 320 * index, index })}
           renderItem={({ item }) => (
-            <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} />
+            <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} timelineOpen={hasEmojis} />
           )}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}

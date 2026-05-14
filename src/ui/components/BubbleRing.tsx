@@ -8,49 +8,41 @@ type Bubble = { id: string; emoji: string; active: boolean; time?: string };
 const R = 21;
 const GAP = 14;
 const MIN_DIST = R * 2 + GAP;
-const SW = Dimensions.get("window").width;
-const SH = Dimensions.get("window").height;
+const SW = Math.min(Dimensions.get("window").width, 393);
+const SH = Math.min(Dimensions.get("window").height, 852);
 
-function flowerPos(i: number, n: number, ringR: number, col: number, row: number) {
-  // For 5 or fewer: simple circle, shifted for edge rows
-  if (n <= 5) {
-    const orbitR = Math.max(R * 3, ringR * 0.7);
-    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-    let x = Math.cos(angle) * orbitR;
-    let y = Math.sin(angle) * orbitR;
-    // Edge columns: flip and keep full distance
-    if (col === 0 && x < 0) x = Math.abs(x);
-    if (col === 6 && x > 0) x = -Math.abs(x);
-    if (row === 0 && y < 0) y = Math.abs(y) * 0.6;
-    if (row >= 4 && y > 0) y = -Math.abs(y) * 0.6;
-    return { x, y };
+function flowerPos(i: number, n: number, ringR: number, col: number, row: number, sp?: { x: number; y: number }) {
+  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55);
+
+  // First column: half circle on right side only
+  if (col === 0) {
+    const angle = -Math.PI / 2 + (Math.PI * i) / Math.max(n - 1, 1);
+    return { x: Math.cos(angle) * orbitR, y: Math.sin(angle) * orbitR };
   }
 
-  const extraSpace = (col === 0 || col === 6) ? 1.4 : 1;
-  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55) * extraSpace;
+  // Last column: half circle on left side only
+  if (col === 6) {
+    const angle = Math.PI / 2 + (Math.PI * i) / Math.max(n - 1, 1);
+    return { x: Math.cos(angle) * orbitR, y: Math.sin(angle) * orbitR };
+  }
+
+  // Other columns: full circle with space-aware flipping
+  const left = sp ? sp.x - 20 - R * 2 : (col + 0.5) * (SW / 7) - 20;
+  const right = sp ? SW - sp.x - 20 - R * 2 : SW - (col + 0.5) * (SW / 7) - 20;
+  const top = sp ? sp.y - 80 - R * 2 : 100;
+  const bottom = sp ? SH - sp.y - 20 - R * 2 : SH - 200;
+
   const angle = (2 * Math.PI * i) / n - Math.PI / 2;
   let x = Math.cos(angle) * orbitR;
   let y = Math.sin(angle) * orbitR;
 
-  // Left columns: flip bubbles that go left to the right side
-  if (col <= 1) {
-    const limit = col === 0 ? 0 : -orbitR * 0.3;
-    if (x < limit) x = Math.abs(x);
-  }
-  // Right columns: flip bubbles that go right to the left side
-  if (col >= 5) {
-    const limit = col === 6 ? 0 : orbitR * 0.3;
-    if (x > limit) x = -Math.abs(x);
-  }
+  if (left < orbitR && x < 0) x = Math.abs(x);
+  if (right < orbitR && x > 0) x = -Math.abs(x);
+  if (top < orbitR && y < 0) y = Math.abs(y);
+  if (bottom < orbitR && y > 0) y = -Math.abs(y);
 
-  // Top row: flip bubbles that go up to below
-  if (row === 0) {
-    if (y < 0) y = Math.abs(y);
-  }
-  // Bottom rows (3+): flip bubbles that go down to above
-  if (row >= 3) {
-    if (y > 0) y = -Math.abs(y);
-  }
+  x = Math.max(-left, Math.min(right, x));
+  y = Math.max(-top, Math.min(bottom, y));
 
   return { x, y };
 }
@@ -66,9 +58,7 @@ function BubbleView({ index, tagIndex, xs, ys, bubble, isCenter, onToggle }: {
   if (isCenter) {
     return (
       <View style={st.centerWrap}>
-        <View style={st.centerBub}>
-          <Text style={st.centerTxt}>{bubble.emoji}</Text>
-        </View>
+        <View style={st.centerBub}><Text style={st.centerTxt}>{bubble.emoji}</Text></View>
       </View>
     );
   }
@@ -88,57 +78,63 @@ function BubbleView({ index, tagIndex, xs, ys, bubble, isCenter, onToggle }: {
   );
 }
 
-export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2, label }: {
+export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2, label, screenPos, visibleHeight }: {
   bubbles: Bubble[]; ringR: number; onToggle: (id: string) => void; col?: number; row?: number; label?: string;
+  screenPos?: { x: number; y: number }; visibleHeight?: number;
 }) {
   const centerBubble: Bubble = { id: "__center__", emoji: label ?? "", active: false };
   const all = label ? [centerBubble, ...bubbles] : bubbles;
   const n = bubbles.length;
 
   const makeHomes = (r: number) =>
-    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col, row));
+    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col, row, screenPos));
 
   const homes = makeHomes(ringR);
 
-  const xs = useSharedValue(homes.map(h => h.x));
-  const ys = useSharedValue(homes.map(h => h.y));
+  // Walls: 20px from screen edges (absolute, not relative to calendar)
+  const bL = screenPos ? screenPos.x - 20 : (col + 0.5) * (SW / 7) - 20;
+  const bR = screenPos ? SW - screenPos.x - 20 : SW - (col + 0.5) * (SW / 7) - 20;
+  const bT = screenPos ? screenPos.y - 80 : ringR * 1.2;
+  const bB = screenPos ? (visibleHeight ?? SH) - screenPos.y - 20 : ringR * 1.2;
+
+  // Clamp homes to stay within walls (bubble edge never touches wall)
+  const safeHomes = homes.map(h => ({
+    x: Math.max(-(bL - R), Math.min(bR - R, h.x)),
+    y: Math.max(-(bT - R), Math.min(bB - R, h.y)),
+  }));
+
+  const xs = useSharedValue(all.map(() => 0));
+  const ys = useSharedValue(all.map(() => 0));
   const vxs = useSharedValue(all.map(() => 0));
   const vys = useSharedValue(all.map(() => 0));
-  const homeXs = useSharedValue(homes.map(h => h.x));
-  const homeYs = useSharedValue(homes.map(h => h.y));
+  const homeXs = useSharedValue(safeHomes.map(h => h.x));
+  const homeYs = useSharedValue(safeHomes.map(h => h.y));
   const activeFlags = useSharedValue(all.map(b => b.active ? 1 : 0));
   const count = useSharedValue(all.length);
   const hasCenter = useSharedValue(label ? 1 : 0);
-  const bound = useSharedValue(ringR * 1.5);
-  const topBound = useSharedValue(-ringR * 1.5);
-  const bottomBound = useSharedValue(ringR * 1.5);
-  const leftBound = useSharedValue(-ringR * 1.5);
-  const rightBound = useSharedValue(ringR * 1.5);
-  const tick = useSharedValue(0);
+  const leftBound = useSharedValue(-bL);
+  const rightBound = useSharedValue(bR);
+  const topBound = useSharedValue(-bT);
+  const bottomBound = useSharedValue(bB);
 
   useEffect(() => {
     const h = makeHomes(ringR);
-    homeXs.value = h.map(p => p.x);
-    homeYs.value = h.map(p => p.y);
-    xs.value = h.map(p => p.x);
-    ys.value = h.map(p => p.y);
+    const safe = h.map(p => ({
+      x: Math.max(-(bL - R), Math.min(bR - R, p.x)),
+      y: Math.max(-(bT - R), Math.min(bB - R, p.y)),
+    }));
+    homeXs.value = safe.map(p => p.x);
+    homeYs.value = safe.map(p => p.y);
+    xs.value = all.map(() => 0);
+    ys.value = all.map(() => 0);
     vxs.value = all.map(() => 0);
     vys.value = all.map(() => 0);
     count.value = all.length;
     hasCenter.value = label ? 1 : 0;
-    if (n > 5) {
-      bound.value = ringR * 1.2;
-      topBound.value = (row === 0 ? -ringR * 0.2 : row >= 3 ? -(SH * 0.4) : -ringR) + 20;
-      bottomBound.value = (row >= 4 ? ringR * 0.2 : row === 3 ? ringR * 0.4 : row === 0 ? SH * 0.4 : ringR) - 20;
-      leftBound.value = (col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20;
-      rightBound.value = (col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20;
-    } else {
-      bound.value = ringR * 1.5;
-      topBound.value = -ringR * 1.5;
-      bottomBound.value = ringR * 1.5;
-      leftBound.value = -ringR * 1.5;
-      rightBound.value = ringR * 1.5;
-    }
+    leftBound.value = -bL;
+    rightBound.value = bR;
+    topBound.value = -bT;
+    bottomBound.value = bB;
     activeFlags.value = all.map(b => b.active ? 1 : 0);
   }, [bubbles.length, ringR, col, label]);
 
@@ -156,9 +152,6 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
     const hx = homeXs.value;
     const hy = homeYs.value;
     const center = hasCenter.value;
-    const flags = activeFlags.value;
-    const t = tick.value + 1;
-    tick.value = t;
 
     for (let i = 0; i < nn; i++) {
       if (i === 0 && center) {
@@ -174,13 +167,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
         avy[i] += (dy / dist) * pull * 0.1;
       }
 
-      avx[i] *= 0.82;
-      avy[i] *= 0.82;
-
-      if (ax[i] < leftBound.value) avx[i] += 0.1 * (leftBound.value - ax[i]);
-      if (ax[i] > rightBound.value) avx[i] += 0.1 * (rightBound.value - ax[i]);
-      if (ay[i] < topBound.value) avy[i] += 0.1 * (topBound.value - ay[i]);
-      if (ay[i] > bottomBound.value) avy[i] += 0.1 * (bottomBound.value - ay[i]);
+      avx[i] *= 0.88;
+      avy[i] *= 0.88;
     }
 
     for (let i = 0; i < nn; i++) {
@@ -205,6 +193,11 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
       if (i === 0 && center) continue;
       ax[i] += avx[i];
       ay[i] += avy[i];
+      // Wall bounce — 20px from screen edges
+      if (ax[i] < leftBound.value + R) { ax[i] = leftBound.value + R; avx[i] = Math.abs(avx[i]) * 0.3; }
+      if (ax[i] > rightBound.value - R) { ax[i] = rightBound.value - R; avx[i] = -Math.abs(avx[i]) * 0.3; }
+      if (ay[i] < topBound.value + R) { ay[i] = topBound.value + R; avy[i] = Math.abs(avy[i]) * 0.3; }
+      if (ay[i] > bottomBound.value - R) { ay[i] = bottomBound.value - R; avy[i] = -Math.abs(avy[i]) * 0.3; }
     }
 
     xs.value = ax;
@@ -242,39 +235,25 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   centerBub: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ff3b30",
-    borderWidth: 1,
-    borderColor: "#ff3b30",
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "#ff3b30", borderWidth: 1, borderColor: "#ff3b30",
   },
   centerTxt: { fontSize: 12, fontWeight: "700", color: "#fff" },
   bub: {
-    width: R * 2,
-    height: R * 2,
-    borderRadius: R,
-    alignItems: "center",
-    justifyContent: "center",
+    width: R * 2, height: R * 2, borderRadius: R,
+    alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(230,235,245,0.2)",
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowColor: "#000", shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12,
   },
   bubActive: {},
   bubInactive: { opacity: 0.8 },
   bubTxt: { fontSize: 22 },
   timeBadge: {
-    position: "absolute",
-    bottom: 2,
-    alignSelf: "center",
-    backgroundColor: theme.surfaceHover,
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    position: "absolute", bottom: 2, alignSelf: "center",
+    backgroundColor: theme.surfaceHover, borderRadius: 4,
+    paddingHorizontal: 4, paddingVertical: 1,
   },
   timeTxt: { fontSize: 8, color: theme.fgMuted, fontWeight: "600" },
 });
