@@ -10,6 +10,8 @@ import { StoreProvider, useStore } from "./src/application/StoreContext";
 import { AuthProvider, useAuth } from "./src/application/AuthContext";
 import TagManager from "./src/ui/components/TagManager";
 import Calendar from "./src/ui/components/Calendar";
+import YearView from "./src/ui/components/YearView";
+import MonthView from "./src/ui/components/MonthView";
 import Dashboard, { TagFilters, StreakPanel } from "./src/ui/components/Dashboard";
 import DayTimeline from "./src/ui/components/DayTimeline";
 import WelcomeScreen from "./src/ui/screens/WelcomeScreen";
@@ -30,6 +32,7 @@ function Main() {
   const { state } = useStore();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
+  const [calMonth, setCalMonth] = useState<number | null>(null);
   const [filter, setFilter] = useState<string[]>([]);
   const [streakRange, setStreakRange] = useState<{ start: string; end: string } | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -59,13 +62,15 @@ function Main() {
           </ScrollView>
         )}
         {tab === "calendar" && (
-          <ScrollView style={st.scroll} contentContainerStyle={st.contentFull}>
-            <Calendar
-              year={year} month={month} onNav={onNav}
-              filter={filter} streakRange={streakRange} onSelectDate={setSelectedDate}
+          calMonth !== null ? (
+            <MonthView
+              initialYear={year}
+              initialMonth={calMonth}
+              onBack={(y) => { setYear(y); setCalMonth(null); }}
             />
-            <DayTimeline date={selectedDate} filter={filter} />
-          </ScrollView>
+          ) : (
+            <YearView onSelectMonth={(y, m) => { setYear(y); setCalMonth(m); }} />
+          )
         )}
         {tab === "dashboard" && (
           <ScrollView style={st.scroll} contentContainerStyle={st.content}>
