@@ -11,6 +11,20 @@ const SW = Dimensions.get("window").width;
 const SH = Dimensions.get("window").height;
 
 function flowerPos(i: number, n: number, ringR: number, col: number, row: number) {
+  // For 5 or fewer: simple circle, shifted for edge rows
+  if (n <= 5) {
+    const orbitR = Math.max(R * 3, ringR * 0.7);
+    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+    let x = Math.cos(angle) * orbitR;
+    let y = Math.sin(angle) * orbitR;
+    // Same col/row rules but gentler
+    if (col === 0 && x < 0) x = Math.abs(x) * 0.6;
+    if (col === 6 && x > 0) x = -Math.abs(x) * 0.6;
+    if (row === 0 && y < 0) y = Math.abs(y) * 0.6;
+    if (row >= 4 && y > 0) y = -Math.abs(y) * 0.6;
+    return { x, y };
+  }
+
   const extraSpace = (col === 0 || col === 6) ? 1.4 : 1;
   const orbitR = Math.max(R * 2 + GAP, ringR * 0.55) * extraSpace;
   const angle = (2 * Math.PI * i) / n - Math.PI / 2;
@@ -83,8 +97,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
 
   const homes = makeHomes(ringR);
 
-  const xs = useSharedValue(all.map(() => 0));
-  const ys = useSharedValue(all.map(() => 0));
+  const xs = useSharedValue(homes.map(h => h.x));
+  const ys = useSharedValue(homes.map(h => h.y));
   const vxs = useSharedValue(all.map(() => 0));
   const vys = useSharedValue(all.map(() => 0));
   const homeXs = useSharedValue(homes.map(h => h.x));
@@ -92,28 +106,36 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
   const activeFlags = useSharedValue(all.map(b => b.active ? 1 : 0));
   const count = useSharedValue(all.length);
   const hasCenter = useSharedValue(label ? 1 : 0);
-  const bound = useSharedValue(ringR - 20);
-  const topBound = useSharedValue((row === 0 ? -ringR * 0.2 : row >= 3 ? -(SH * 0.4) : -ringR) + 20);
-  const bottomBound = useSharedValue((row >= 4 ? ringR * 0.2 : row === 3 ? ringR * 0.4 : row === 0 ? SH * 0.4 : ringR) - 20);
-  const leftBound = useSharedValue((col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20);
-  const rightBound = useSharedValue((col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20);
+  const bound = useSharedValue(ringR * 1.5);
+  const topBound = useSharedValue(-ringR * 1.5);
+  const bottomBound = useSharedValue(ringR * 1.5);
+  const leftBound = useSharedValue(-ringR * 1.5);
+  const rightBound = useSharedValue(ringR * 1.5);
   const tick = useSharedValue(0);
 
   useEffect(() => {
     const h = makeHomes(ringR);
     homeXs.value = h.map(p => p.x);
     homeYs.value = h.map(p => p.y);
-    xs.value = all.map(() => 0);
-    ys.value = all.map(() => 0);
+    xs.value = h.map(p => p.x);
+    ys.value = h.map(p => p.y);
     vxs.value = all.map(() => 0);
     vys.value = all.map(() => 0);
     count.value = all.length;
     hasCenter.value = label ? 1 : 0;
-    bound.value = ringR - 20;
-    topBound.value = (row === 0 ? -ringR * 0.2 : row >= 3 ? -(SH * 0.4) : -ringR) + 20;
-    bottomBound.value = (row >= 4 ? ringR * 0.2 : row === 3 ? ringR * 0.4 : row === 0 ? SH * 0.4 : ringR) - 20;
-    leftBound.value = (col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20;
-    rightBound.value = (col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20;
+    if (n > 5) {
+      bound.value = ringR * 1.2;
+      topBound.value = (row === 0 ? -ringR * 0.2 : row >= 3 ? -(SH * 0.4) : -ringR) + 20;
+      bottomBound.value = (row >= 4 ? ringR * 0.2 : row === 3 ? ringR * 0.4 : row === 0 ? SH * 0.4 : ringR) - 20;
+      leftBound.value = (col === 0 ? -ringR * 0.2 : col === 1 ? -ringR * 0.4 : col === 5 ? -(SW - 80) : col === 6 ? -(SW - 40) : -ringR) + 20;
+      rightBound.value = (col === 6 ? ringR * 0.2 : col === 5 ? ringR * 0.4 : col === 1 ? SW - 80 : col === 0 ? SW - 40 : ringR) - 20;
+    } else {
+      bound.value = ringR * 1.5;
+      topBound.value = -ringR * 1.5;
+      bottomBound.value = ringR * 1.5;
+      leftBound.value = -ringR * 1.5;
+      rightBound.value = ringR * 1.5;
+    }
     activeFlags.value = all.map(b => b.active ? 1 : 0);
   }, [bubbles.length, ringR, col, label]);
 
@@ -149,8 +171,8 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
         avy[i] += (dy / dist) * pull * 0.1;
       }
 
-      avx[i] *= 0.88;
-      avy[i] *= 0.88;
+      avx[i] *= 0.82;
+      avy[i] *= 0.82;
 
       if (ax[i] < leftBound.value) avx[i] += 0.1 * (leftBound.value - ax[i]);
       if (ax[i] > rightBound.value) avx[i] += 0.1 * (rightBound.value - ax[i]);
@@ -158,13 +180,14 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
       if (ay[i] > bottomBound.value) avy[i] += 0.1 * (bottomBound.value - ay[i]);
     }
 
+    if (nn > 6) {
     for (let i = 0; i < nn; i++) {
       for (let j = i + 1; j < nn; j++) {
         const dx = ax[j] - ax[i], dy = ay[j] - ay[i];
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-        if (dist < MIN_DIST + 12) {
+        if (dist < MIN_DIST) {
           const nx = dx / dist, ny = dy / dist;
-          const push = (MIN_DIST + 12 - dist) * 0.3;
+          const push = (MIN_DIST - dist) * 0.3;
           const iFixed = i === 0 && center;
           if (iFixed) {
             ax[j] += nx * push * 2; ay[j] += ny * push * 2;
@@ -174,6 +197,7 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
           }
         }
       }
+    }
     }
 
     for (let i = 0; i < nn; i++) {

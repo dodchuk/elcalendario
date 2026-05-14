@@ -146,6 +146,7 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
                 isFuture && st.future,
                 inStreak ? st.streakCell : null,
                 hasFiltered ? st.filteredCell : null,
+                openCell && !isOpen && { opacity: 0.3 },
               ]}
               onPress={() => {
                 if (isFuture) return;

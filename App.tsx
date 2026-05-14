@@ -215,7 +215,7 @@ const st = StyleSheet.create({
     backgroundColor: "#000",
   },
   root: { flex: 1, width: 393, maxWidth: 393, height: 852, maxHeight: 852, overflow: "hidden", borderRadius: 20 },
-  container: { flex: 1, backgroundColor: theme.bg },
+  container: { flex: 1, backgroundColor: "#000" },
   main: { flex: 1 },
   body: { flex: 1 },
   scroll: { flex: 1 },
