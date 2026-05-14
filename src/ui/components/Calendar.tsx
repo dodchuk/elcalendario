@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useStore } from "../../application/StoreContext";
 import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
@@ -57,6 +58,8 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
       }
       return clamped;
     });
+    setOpenCell(null);
+    setCursor(-1);
   }, [year, month, total, today]);
 
   useEffect(() => {
@@ -101,14 +104,14 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
       <Animated.View style={[st.wave3, waveStyle3]} pointerEvents="none" />
       {/* Header */}
       <View style={st.header}>
-        <Pressable onPress={() => onNav(year - 1, month)} style={st.navBtn}><Text style={st.navTxt}>«</Text></Pressable>
-        <Pressable onPress={prev} style={st.navBtn}><Text style={st.navTxt}>‹</Text></Pressable>
+        <Pressable onPress={() => onNav(year - 1, month)} style={st.navBtn}><Ionicons name="play-back" size={14} color={theme.fgMuted} /></Pressable>
+        <Pressable onPress={prev} style={st.navBtn}><Ionicons name="chevron-back" size={18} color={theme.fgMuted} /></Pressable>
         <Text style={st.monthTitle}>{MONTHS[month]} {year}</Text>
         <Pressable onPress={next} style={[st.navBtn, isCurrentMonth && st.navDisabled]} disabled={isCurrentMonth}>
-          <Text style={[st.navTxt, isCurrentMonth && { opacity: 0.2 }]}>›</Text>
+          <Ionicons name="chevron-forward" size={18} color={isCurrentMonth ? theme.fgSubtle : theme.fgMuted} />
         </Pressable>
         <Pressable onPress={() => onNav(year + 1, month)} style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]} disabled={year >= now.getFullYear()}>
-          <Text style={[st.navTxt, year >= now.getFullYear() && { opacity: 0.2 }]}>»</Text>
+          <Ionicons name="play-forward" size={14} color={year >= now.getFullYear() ? theme.fgSubtle : theme.fgMuted} />
         </Pressable>
       </View>
 
@@ -157,12 +160,12 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
             >
               {!isOpen && <View style={[
                 st.dateNum,
-                cursor === d && !isToday && st.dateNumCursor,
+                cursor === d && openCell && !isToday && st.dateNumCursor,
                 isToday && st.dateNumToday,
               ]}>
                 <Text style={[
                   st.dateNumTxt,
-                  cursor === d && !isToday && st.dateNumCursorTxt,
+                  cursor === d && openCell && !isToday && st.dateNumCursorTxt,
                   isToday && st.dateNumTodayTxt,
                 ]}>{d}</Text>
               </View>}
@@ -222,9 +225,8 @@ export default function Calendar({ year, month, onNav, filter, streakRange, onSe
 
 const st = StyleSheet.create({
   wrap: {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 12,
+    flex: 1,
+    borderRadius: 0,
     padding: 16,
   },
   wave: {

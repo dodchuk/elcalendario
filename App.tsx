@@ -59,7 +59,7 @@ function Main() {
           </ScrollView>
         )}
         {tab === "calendar" && (
-          <ScrollView style={st.scroll} contentContainerStyle={st.content}>
+          <ScrollView style={st.scroll} contentContainerStyle={st.contentFull}>
             <Calendar
               year={year} month={month} onNav={onNav}
               filter={filter} streakRange={streakRange} onSelectDate={setSelectedDate}
@@ -220,6 +220,7 @@ const st = StyleSheet.create({
   body: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 24, gap: 16 },
+  contentFull: { paddingVertical: 16, gap: 8 },
   appHeader: {
     flexDirection: "row",
     alignItems: "center",
