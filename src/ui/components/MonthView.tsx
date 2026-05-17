@@ -173,15 +173,28 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
     }
   }, [months]);
 
+  const closeDayPage = useCallback(() => {
+    tlHeight.value = withTiming(0, { duration: 250, easing: Easing.in(Easing.ease) });
+    setOpenDate(null);
+    setTimeout(() => {
+      setShowTimeline(false);
+      setDisplayDate(null);
+    }, 250);
+  }, []);
+
   const calFlex = useSharedValue(1);
   const tlHeight = useSharedValue(0);
 
   useEffect(() => {
-    tlHeight.value = withTiming(showTimeline ? 280 : 0, { duration: 300, easing: Easing.out(Easing.ease) });
+    tlHeight.value = withTiming(showTimeline ? 1 : 0, { duration: 300, easing: Easing.out(Easing.ease) });
   }, [showTimeline]);
 
   const calendarStyle = useAnimatedStyle(() => ({ flex: calFlex.value }));
   const timelineStyle = useAnimatedStyle(() => ({ height: tlHeight.value, overflow: "hidden" as const }));
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: tlHeight.value,
+    transform: [{ translateY: (1 - tlHeight.value) * 20 }],
+  }));
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -199,21 +212,11 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
       <View style={st.header}>
         {showTimeline ? (
           <>
-            <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
+            <Pressable onPress={() => onBack(visibleYear)} style={st.backBtn}>
               <Ionicons name="chevron-back" size={20} color={theme.fg} />
-              <Text style={st.backTxt}>{openDate?.split("-")[0]}</Text>
+              <Text style={st.backTxt}>{visibleYear}</Text>
             </Pressable>
-            <Pressable onPress={() => {
-              const [y, m] = (openDate ?? "").split("-").map(Number);
-              const idx = months.findIndex(item => item.year === y && item.month === m - 1);
-              if (idx >= 0) setScrollIdx(idx);
-              setShowTimeline(false); setOpenDate(null); setDisplayDate(null);
-            }} style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                <Ionicons name="chevron-back" size={14} color={theme.fg} style={{ marginLeft: -18 }} />
-                <Text style={st.headerTitle}>{openDate ? MONTHS[Number(openDate.split("-")[1]) - 1] : ""}</Text>
-              </View>
-            </Pressable>
+            <Text style={[st.headerTitle, { position: "absolute", left: 0, right: 0, textAlign: "center" }]}>{MONTHS[visibleMonth]}</Text>
             <View style={{ width: 60 }} />
           </>
         ) : (
@@ -235,30 +238,55 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
       </View>
 
       {/* DayTimeline + selected month overlay (swipable up to dismiss) */}
-      {showTimeline && openDate && (() => {
-        const [oy, om] = openDate.split("-").map(Number);
+      {/* Day page overlay - slides over calendar */}
+      {displayDate && showTimeline && (() => {
+        const [oy, om] = displayDate.split("-").map(Number);
         return (
-        <View style={st.overlay}>
-          <View style={{ flex: 1, overflow: "visible" }}>
+        <Animated.View style={[st.overlay, overlayStyle]}>
+          <View style={st.header}>
+            <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
+              <Ionicons name="chevron-back" size={20} color={theme.fg} />
+              <Text style={st.backTxt}>{displayDate?.split("-")[0]}</Text>
+            </Pressable>
+            <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="box-none">
+              <Pressable onPress={() => {
+                const [y, m] = (displayDate ?? "").split("-").map(Number);
+                const idx = months.findIndex(item => item.year === y && item.month === m - 1);
+                if (idx >= 0) setScrollIdx(idx);
+                closeDayPage();
+              }} style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="chevron-back" size={14} color={theme.fg} style={{ marginRight: 2, marginLeft: -18 }} />
+                <Text style={st.headerTitle}>{displayDate ? MONTHS[Number(displayDate.split("-")[1]) - 1] : ""}</Text>
+              </Pressable>
+            </View>
+            <View style={{ width: 60, alignItems: "flex-end" }}>
+              <Pressable onPress={closeDayPage} style={st.closeBtn}>
+                <Ionicons name="close" size={14} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+          <View style={st.dayRow}>
+            {DAYS.map(d => <Text key={d} style={st.dayLabel}>{d}</Text>)}
+          </View>
+          <View style={{ flex: 1, overflow: "visible", zIndex: 10 }}>
             <DayFocusBlock
-              day={Number(openDate.split("-")[2])}
-              col={(new Date(oy, om - 1, 1).getDay() + Number(openDate.split("-")[2]) - 1) % 7}
-              row={Math.floor((new Date(oy, om - 1, 1).getDay() + Number(openDate.split("-")[2]) - 1) / 7)}
+              day={Number(displayDate.split("-")[2])}
+              col={(new Date(oy, om - 1, 1).getDay() + Number(displayDate.split("-")[2]) - 1) % 7}
+              row={Math.floor((new Date(oy, om - 1, 1).getDay() + Number(displayDate.split("-")[2]) - 1) / 7)}
               totalDays={new Date(oy, om, 0).getDate()}
               offset={new Date(oy, om - 1, 1).getDay()}
-              date={openDate}
-              onBack={() => { setShowTimeline(false); setOpenDate(null); setDisplayDate(null); }}
+              date={displayDate}
+              onBack={closeDayPage}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <DayTimeline date={openDate} filter={[]} />
+            <DayTimeline date={displayDate} filter={[]} />
           </View>
-        </View>
+        </Animated.View>
         );
       })()}
 
       {/* Infinite scroll months (hidden when overlay is showing) */}
-      {!showTimeline && (
       <View style={st.list}>
         <FlatList
           ref={listRef}
@@ -281,7 +309,6 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           style={{ flex: 1 }}
         />
       </View>
-      )}
     </View>
   );
 }
@@ -316,11 +343,21 @@ const st = StyleSheet.create({
   },
   list: { flex: 1 },
   overlay: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "#0a0a0a",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: "visible",
+    zIndex: 5,
+  },
+  closeBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#ff3b30",
+    alignItems: "center",
+    justifyContent: "center",
   },
   monthSection: { paddingHorizontal: 16, paddingTop: 16, minHeight: 320, borderBottomWidth: 0.5, borderBottomColor: "rgba(255,255,255,0.08)" },
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted, marginBottom: 8 },
@@ -350,8 +387,6 @@ const st = StyleSheet.create({
   ringEmoji: { position: "absolute", fontSize: 8 },
   timelineWrap: {
     overflow: "hidden",
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
     borderBottomWidth: 0.5,
     borderBottomColor: "rgba(255,255,255,0.08)",
     backgroundColor: "#0a0a0a",

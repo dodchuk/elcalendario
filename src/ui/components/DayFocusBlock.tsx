@@ -5,6 +5,7 @@ import BubbleRing from "./BubbleRing";
 import { theme } from "../theme/colors";
 
 const SW = Math.min(Dimensions.get("window").width, 393);
+const SH = Math.min(Dimensions.get("window").height, 852);
 
 type Props = {
   day: number;
@@ -30,7 +31,7 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
   const cellW = blockW / 7;
   // Cell center position within this block
   const cellX = 16 + (col + 0.5) * cellW;
-  const cellY = 8 + (row + 0.5) * cellW;
+  const cellY = 80 + 16 + (row + 0.5) * cellW; // 80 header + 16 padding
 
   // Boundaries: distance from cell center to block edges
   // BubbleRing uses these to keep emojis inside this block
@@ -38,8 +39,8 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
     x: cellX,
     y: cellY,
   };
-  // Override visibleHeight to block height so bubbles stay within
-  const visibleH = blockHeight;
+  // Use full screen height for boundaries (overflow is visible)
+  const visibleH = SH;
 
   const cells = Array.from({ length: totalDays + offset }, (_, i) => {
     const isOffset = i < offset;
@@ -76,19 +77,36 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
     );
   });
 
-  return <View style={st.container}>{cells}</View>;
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const [yr, mo] = date.split("-").map(Number);
+
+  return (
+    <View style={st.container}>
+      <Text style={st.monthLabel}>{MONTHS[mo - 1]} {yr}</Text>
+      <View style={st.grid}>{cells}</View>
+    </View>
+  );
 }
 
 const st = StyleSheet.create({
   container: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  monthLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.fgMuted,
+    marginBottom: 8,
+  },
+  grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    gap: 2,
     overflow: "visible",
   },
   cell: {
-    width: "14.28%",
+    width: "13.5%",
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
