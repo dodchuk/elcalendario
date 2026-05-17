@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useStore } from "../../application/StoreContext";
 import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
+import DayFocusBlock from "./DayFocusBlock";
 import DayTimeline from "./DayTimeline";
 import { theme } from "../theme/colors";
 import { getEmojiGlowColor } from "../theme/tagColors";
@@ -46,7 +47,7 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
 
   return (
     <View style={st.monthSection}>
-      <Text style={st.monthTitle}>{MONTHS[month]} {year}</Text>
+      {!timelineOpen && <Text style={st.monthTitle}>{MONTHS[month]} {year}</Text>}
       <View style={st.grid}>
         {Array.from({ length: offset }, (_, i) => <View key={`e${i}`} style={st.emptyCell} />)}
         {Array.from({ length: total }, (_, i) => {
@@ -62,8 +63,20 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
           return (
             <Pressable
               key={d}
-              style={[st.cell, isToday && st.cellToday, isFuture && st.cellFuture, isOpen && st.cellOpen, openDate && !isOpen && st.cellSkeleton]}
-              onPress={() => !isFuture && onSelectDate(isOpen ? "" : ds)}
+              style={[st.cell, isToday && st.cellToday, isFuture && st.cellFuture, isOpen && st.cellOpen]}
+              onPress={() => {
+                if (isFuture) return;
+                if (isOpen) {
+                  // Second click on open day → close
+                  onSelectDate("");
+                } else if (activeIds.length > 0) {
+                  // Day has emojis → go to daypage
+                  onSelectDate("__timeline__:" + ds);
+                } else {
+                  // No emojis → open bubble ring
+                  onSelectDate(ds);
+                }
+              }}
               onLayout={e => { if (d === 1) setCellSize(e.nativeEvent.layout.width); }}
             >
               {!isOpen && (
@@ -126,6 +139,7 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
 export default function MonthView({ initialYear, initialMonth, onBack }: Props) {
   const months = useMemo(() => generateMonths(initialYear, initialMonth), [initialYear, initialMonth]);
   const initialIndex = months.findIndex(m => m.year === initialYear && m.month === initialMonth);
+  const [scrollIdx, setScrollIdx] = useState(initialIndex);
   const [visibleYear, setVisibleYear] = useState(initialYear);
   const [visibleMonth, setVisibleMonth] = useState(initialMonth);
   const [openDate, setOpenDate] = useState<string | null>(null);
@@ -134,35 +148,40 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
 
   const { state } = useStore();
   const hasEmojis = openDate ? (state.entries[openDate] ?? []).length > 0 : false;
+  // Track if this is a reopen (had emojis before closing)
+  const [showTimeline, setShowTimeline] = useState(false);
 
   const selectDate = useCallback((ds: string | null) => {
+    if (ds && ds.startsWith("__timeline__:")) {
+      const date = ds.replace("__timeline__:", "");
+      setOpenDate(date);
+      setDisplayDate(date);
+      setShowTimeline(true);
+      return;
+    }
     if (ds) {
       setOpenDate(ds);
       setDisplayDate(ds);
-      // Scroll only if selecting in the last month
+      setShowTimeline(false);
+      // Snap month to top
       const [y, m] = ds.split("-").map(Number);
       const idx = months.findIndex(item => item.year === y && item.month === m - 1);
-      if (idx === months.length - 1) {
-        const offset = idx * 320;
-        setTimeout(() => listRef.current?.scrollToOffset({ offset, animated: true }), 50);
-      }
     } else {
       setOpenDate(null);
       setDisplayDate(null);
+      setShowTimeline(false);
     }
   }, [months]);
 
   const calFlex = useSharedValue(1);
-  const tlFlex = useSharedValue(0);
+  const tlHeight = useSharedValue(0);
 
   useEffect(() => {
-    const show = openDate && (state.entries[openDate] ?? []).length > 0;
-    calFlex.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
-    tlFlex.value = withTiming(show ? 1 : 0, { duration: 300, easing: Easing.out(Easing.ease) });
-  }, [openDate, state.entries]);
+    tlHeight.value = withTiming(showTimeline ? 280 : 0, { duration: 300, easing: Easing.out(Easing.ease) });
+  }, [showTimeline]);
 
   const calendarStyle = useAnimatedStyle(() => ({ flex: calFlex.value }));
-  const timelineStyle = useAnimatedStyle(() => ({ flex: tlFlex.value }));
+  const timelineStyle = useAnimatedStyle(() => ({ height: tlHeight.value, overflow: "hidden" as const }));
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -175,14 +194,38 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   return (
-    <View style={[st.container, openDate && { backgroundColor: "rgba(0,0,0,0.5)" }]}>
+    <View style={st.container}>
       {/* Fixed header */}
       <View style={st.header}>
-        <Pressable onPress={() => onBack(visibleYear)} style={st.backBtn}>
-          <Ionicons name="chevron-back" size={20} color={theme.fg} />
-          <Text style={st.backTxt}>{visibleYear}</Text>
-        </Pressable>
-        <Text style={st.headerTitle}>{MONTHS[visibleMonth]}</Text>
+        {showTimeline ? (
+          <>
+            <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
+              <Ionicons name="chevron-back" size={20} color={theme.fg} />
+              <Text style={st.backTxt}>{openDate?.split("-")[0]}</Text>
+            </Pressable>
+            <Pressable onPress={() => {
+              const [y, m] = (openDate ?? "").split("-").map(Number);
+              const idx = months.findIndex(item => item.year === y && item.month === m - 1);
+              if (idx >= 0) setScrollIdx(idx);
+              setShowTimeline(false); setOpenDate(null); setDisplayDate(null);
+            }} style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                <Ionicons name="chevron-back" size={14} color={theme.fg} style={{ marginLeft: -18 }} />
+                <Text style={st.headerTitle}>{openDate ? MONTHS[Number(openDate.split("-")[1]) - 1] : ""}</Text>
+              </View>
+            </Pressable>
+            <View style={{ width: 60 }} />
+          </>
+        ) : (
+          <>
+            <Pressable onPress={() => onBack(visibleYear)} style={st.backBtn}>
+              <Ionicons name="chevron-back" size={20} color={theme.fg} />
+              <Text style={st.backTxt}>{visibleYear}</Text>
+            </Pressable>
+            <Text style={[st.headerTitle, { position: "absolute", left: 0, right: 0, textAlign: "center" }]}>{MONTHS[visibleMonth]}</Text>
+            <View style={{ width: 60 }} />
+          </>
+        )}
         <View style={{ width: 60 }} />
       </View>
 
@@ -191,35 +234,54 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
         {DAYS.map(d => <Text key={d} style={st.dayLabel}>{d}</Text>)}
       </View>
 
-      {/* Infinite scroll months */}
-      <Animated.View style={[{ overflow: "hidden" }, calendarStyle]}>
+      {/* DayTimeline + selected month overlay (swipable up to dismiss) */}
+      {showTimeline && openDate && (() => {
+        const [oy, om] = openDate.split("-").map(Number);
+        return (
+        <View style={st.overlay}>
+          <View style={{ flex: 1, overflow: "visible" }}>
+            <DayFocusBlock
+              day={Number(openDate.split("-")[2])}
+              col={(new Date(oy, om - 1, 1).getDay() + Number(openDate.split("-")[2]) - 1) % 7}
+              row={Math.floor((new Date(oy, om - 1, 1).getDay() + Number(openDate.split("-")[2]) - 1) / 7)}
+              totalDays={new Date(oy, om, 0).getDate()}
+              offset={new Date(oy, om - 1, 1).getDay()}
+              date={openDate}
+              onBack={() => { setShowTimeline(false); setOpenDate(null); setDisplayDate(null); }}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <DayTimeline date={openDate} filter={[]} />
+          </View>
+        </View>
+        );
+      })()}
+
+      {/* Infinite scroll months (hidden when overlay is showing) */}
+      {!showTimeline && (
+      <View style={st.list}>
         <FlatList
           ref={listRef}
           data={months}
           keyExtractor={item => item.key}
-          initialScrollIndex={initialIndex}
+          initialScrollIndex={scrollIdx}
           getItemLayout={(_, index) => ({ length: 320, offset: 320 * index, index })}
           renderItem={({ item }) => (
-            <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} timelineOpen={hasEmojis} />
+            <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} timelineOpen={false} />
           )}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           showsVerticalScrollIndicator={false}
-          scrollEnabled={!hasEmojis}
+          scrollEnabled={true}
           snapToInterval={320}
-          decelerationRate="fast"
-          contentContainerStyle={{ paddingBottom: hasEmojis ? 320 : 40 }}
+          snapToAlignment="start"
+          pagingEnabled={false}
+          decelerationRate={0.9}
+          contentContainerStyle={{ paddingBottom: 40 }}
           style={{ flex: 1 }}
         />
-      </Animated.View>
-
-      {/* DayTimeline */}
-      <Animated.View style={[st.timelineWrap, timelineStyle]}>
-        <Pressable style={st.timelineHandle} onPress={() => selectDate(null)}>
-          <View style={st.handleBar} />
-        </Pressable>
-        {displayDate && <DayTimeline date={displayDate} filter={[]} />}
-      </Animated.View>
+      </View>
+      )}
     </View>
   );
 }
@@ -231,7 +293,8 @@ const st = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   backTxt: { fontSize: 16, color: theme.fg, fontWeight: "600" },
@@ -240,8 +303,8 @@ const st = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 16,
     paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.border,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.12)",
   },
   dayLabel: {
     flex: 1,
@@ -252,7 +315,14 @@ const st = StyleSheet.create({
     textTransform: "uppercase",
   },
   list: { flex: 1 },
-  monthSection: { paddingHorizontal: 16, paddingTop: 16, minHeight: 320 },
+  overlay: {
+    flex: 1,
+    backgroundColor: "#0a0a0a",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: "visible",
+  },
+  monthSection: { paddingHorizontal: 16, paddingTop: 16, minHeight: 320, borderBottomWidth: 0.5, borderBottomColor: "rgba(255,255,255,0.08)" },
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted, marginBottom: 8 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
   emptyCell: { width: "13.5%", aspectRatio: 1 },
@@ -280,11 +350,11 @@ const st = StyleSheet.create({
   ringEmoji: { position: "absolute", fontSize: 8 },
   timelineWrap: {
     overflow: "hidden",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    backgroundColor: theme.bg,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0a",
   },
   timelineHandle: {
     alignItems: "center",

@@ -251,6 +251,7 @@ const st = StyleSheet.create({
     paddingBottom: 20,
     paddingTop: 8,
     paddingHorizontal: 24,
+    backgroundColor: "#0a0a0a",
   },
   tab: {
     alignItems: "center",

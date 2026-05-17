@@ -43,7 +43,7 @@ export default function DayTimeline({ date, filter }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [containerW, setContainerW] = useState(300);
   const scrollRef = useRef<Animated.ScrollView>(null);
-  const viewH = useSharedValue(400);
+  const viewH = useSharedValue(320);
   const scrollOffset = useRef(48 * ROW_H);
 
   const n = activeIds.length;
@@ -124,10 +124,10 @@ export default function DayTimeline({ date, filter }: Props) {
         avx[i] += (Math.random() - 0.5) * 0.04;
         avy[i] += (Math.random() - 0.5) * 0.04;
         avx[i] *= 0.99; avy[i] *= 0.99;
-        if (ax[i] < R) { ax[i] = R; avx[i] *= -0.5; }
-        if (ax[i] > w - R) { ax[i] = w - R; avx[i] *= -0.5; }
-        if (ay[i] < R) { ay[i] = R; avy[i] *= -0.5; }
-        if (ay[i] > viewH.value - R) { ay[i] = viewH.value - R; avy[i] *= -0.5; }
+        if (ax[i] < R + 20) { ax[i] = R + 20; avx[i] *= -0.5; }
+        if (ax[i] > w - R - 20) { ax[i] = w - R - 20; avx[i] *= -0.5; }
+        if (ay[i] < R + 20) { ay[i] = R + 20; avy[i] *= -0.5; }
+        if (ay[i] > viewH.value - R - 20) { ay[i] = viewH.value - R - 20; avy[i] *= -0.5; }
       }
     }
 
@@ -248,9 +248,9 @@ export default function DayTimeline({ date, filter }: Props) {
 
 const st = StyleSheet.create({
   wrap: {
-    backgroundColor: theme.surface,
+    backgroundColor: "#0a0a0a",
     borderWidth: 1, borderColor: theme.border, borderRadius: 12,
-    marginTop: 0, overflow: "hidden", maxHeight: 320,
+    marginTop: 0, overflow: "hidden", maxHeight: 284,
   },
   scroll: { flex: 1 },
   bubLayer: {
