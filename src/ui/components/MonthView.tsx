@@ -188,12 +188,20 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
 
   const closeDayPage = useCallback(() => {
     tlHeight.value = withTiming(0, { duration: 250, easing: Easing.in(Easing.ease) });
+    const dd = displayDate;
     setOpenDate(null);
+    if (dd) {
+      const [y, m] = dd.split("-").map(Number);
+      const idx = months.findIndex(item => item.year === y && item.month === m - 1);
+      if (idx >= 0) {
+        listRef.current?.scrollToIndex({ index: idx, animated: false, viewOffset: 0, viewPosition: 0 });
+      }
+    }
     setTimeout(() => {
       setShowTimeline(false);
       setDisplayDate(null);
     }, 250);
-  }, []);
+  }, [displayDate, months]);
 
   const calFlex = useSharedValue(1);
   const tlHeight = useSharedValue(0);
@@ -225,17 +233,17 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
       <View style={st.header}>
         <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
           <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
-          <Text style={st.backTxt}>{visibleYear}</Text>
+          <Text style={st.backTxt}>{showTimeline && displayDate ? displayDate.split("-")[0] : visibleYear}</Text>
         </Pressable>
         <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="box-none">
           <Pressable onPress={showTimeline ? () => {
             const [y, m] = (displayDate ?? "").split("-").map(Number);
             const idx = months.findIndex(item => item.year === y && item.month === m - 1);
-            if (idx >= 0) setScrollIdx(idx);
+            if (idx >= 0) listRef.current?.scrollToOffset({ offset: idx * 320, animated: false });
             closeDayPage();
           } : undefined} disabled={!showTimeline} style={{ flexDirection: "row", alignItems: "center" }}>
             {showTimeline && <View style={[st.iconCircle, { position: "absolute", left: -28 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>}
-            <Text style={st.headerTitle}>{MONTHS[visibleMonth]}</Text>
+            <Text style={st.headerTitle}>{MONTHS[showTimeline && displayDate ? Number(displayDate.split("-")[1]) - 1 : visibleMonth]}</Text>
           </Pressable>
         </View>
         <View style={{ alignItems: "flex-end" }}>
@@ -351,7 +359,7 @@ const st = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  monthSection: { paddingHorizontal: 16, paddingTop: 16, minHeight: 320, borderBottomWidth: 0.5, borderBottomColor: "rgba(255,255,255,0.08)" },
+  monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 320, borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)" },
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted },
   monthBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.05)" },
   monthBadgeActive: { backgroundColor: "#fff" },
