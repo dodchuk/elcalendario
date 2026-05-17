@@ -16,9 +16,10 @@ type Props = {
   date: string;
   blockHeight?: number;
   onBack?: () => void;
+  onSelectDate?: (ds: string) => void;
 };
 
-export default function DayFocusBlock({ day, col, row, totalDays, offset, date, blockHeight = 300, onBack }: Props) {
+export default function DayFocusBlock({ day, col, row, totalDays, offset, date, blockHeight = 300, onBack, onSelectDate }: Props) {
   const { state, dispatch } = useStore();
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map(t => [t.id, t])), [state.tags]);
   const activeIds = (state.entries[date] ?? []).filter(id => tagMap[id]);
@@ -71,9 +72,12 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
     }
 
     return (
-      <View key={d} style={st.cell}>
+      <Pressable key={d} style={st.cell} onPress={() => {
+        const ds = `${date.split("-")[0]}-${date.split("-")[1]}-${String(d).padStart(2, "0")}`;
+        onSelectDate?.(ds);
+      }}>
         <View style={st.skeleton} />
-      </View>
+      </Pressable>
     );
   });
 
@@ -82,7 +86,9 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
 
   return (
     <View style={st.container}>
-      <Text style={st.monthLabel}>{MONTHS[mo - 1]} {yr}</Text>
+      <View style={st.monthBadge}>
+        <Text style={st.monthLabel}>{day} {MONTHS[mo - 1]} {yr}</Text>
+      </View>
       <View style={st.grid}>{cells}</View>
     </View>
   );
@@ -93,11 +99,18 @@ const st = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  monthBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: "#ff3b30",
+  },
   monthLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.fgMuted,
-    marginBottom: 8,
+    color: "#fff",
   },
   grid: {
     flexDirection: "row",
@@ -127,5 +140,17 @@ const st = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  dateNum: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  dateNumTxt: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "600" as const,
   },
 });

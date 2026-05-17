@@ -30,13 +30,14 @@ function generateMonths(startYear: number, startMonth: number) {
     m++;
     if (m > 11) { m = 0; y++; }
   }
+  months.reverse();
   return months;
 }
 
 type Props = { initialYear: number; initialMonth: number; onBack: (year: number) => void };
 
-function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
-  year: number; month: number; openDate: string | null; onSelectDate: (ds: string) => void; timelineOpen: boolean;
+function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActive }: {
+  year: number; month: number; openDate: string | null; onSelectDate: (ds: string) => void; timelineOpen: boolean; isActive: boolean;
 }) {
   const { state, dispatch } = useStore();
   const today = todayStr();
@@ -47,7 +48,11 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
 
   return (
     <View style={st.monthSection}>
-      {!timelineOpen && <Text style={st.monthTitle}>{MONTHS[month]} {year}</Text>}
+      {!timelineOpen && (
+        <View style={[st.monthBadge, isActive && st.monthBadgeActive]}>
+          <Text style={[st.monthTitle, isActive && st.monthTitleActive]}>{MONTHS[month]} {year}</Text>
+        </View>
+      )}
       <View style={st.grid}>
         {Array.from({ length: offset }, (_, i) => <View key={`e${i}`} style={st.emptyCell} />)}
         {Array.from({ length: total }, (_, i) => {
@@ -80,9 +85,17 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
               onLayout={e => { if (d === 1) setCellSize(e.nativeEvent.layout.width); }}
             >
               {!isOpen && (
-                <View style={[st.dateNum, activeIds.length > 0 && st.dateNumHasEmoji, isToday && st.dateNumToday, activeIds.length > 0 && { boxShadow: `0 0 6px ${getEmojiGlowColor(tagMap[activeIds[0]]?.emoji ?? "", 0)}44` } as any]}>
-                  <Text style={[st.dateNumTxt, isToday && st.dateNumTodayTxt]}>{d}</Text>
-                </View>
+                (() => {
+                  const thisMonthHasOpen = openDate && openDate.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`);
+                  if (thisMonthHasOpen) {
+                    return <View style={st.skeletonDay} />;
+                  }
+                  return (
+                    <View style={[st.dateNum, activeIds.length > 0 && st.dateNumHasEmoji, isToday && st.dateNumToday, activeIds.length > 0 && { boxShadow: `0 0 6px ${getEmojiGlowColor(tagMap[activeIds[0]]?.emoji ?? "", 0)}44` } as any]}>
+                      <Text style={[st.dateNumTxt, isToday && st.dateNumTodayTxt]}>{d}</Text>
+                    </View>
+                  );
+                })()
               )}
               {!isFuture && isOpen && state.tags.length > 0 && (() => {
                 const dayTimeSlots = state.timeEntries?.[ds] ?? [];
@@ -109,7 +122,7 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen }: {
                   />
                 );
               })()}
-              {!isFuture && !isOpen && activeIds.length > 0 && (
+              {!isFuture && !isOpen && !openDate?.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`) && activeIds.length > 0 && (
                 <>
                   {activeIds.slice(0, 6).map((id, idx) => {
                     const angle = (2 * Math.PI * idx) / Math.min(activeIds.length, 6) - Math.PI / 2;
@@ -198,7 +211,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
-      const item = viewableItems[Math.floor(viewableItems.length / 2)]?.item ?? viewableItems[0].item;
+      const item = viewableItems[0].item;
       setVisibleYear(item.year);
       setVisibleMonth(item.month);
     }
@@ -210,26 +223,28 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
     <View style={st.container}>
       {/* Fixed header */}
       <View style={st.header}>
-        {showTimeline ? (
-          <>
-            <Pressable onPress={() => onBack(visibleYear)} style={st.backBtn}>
-              <Ionicons name="chevron-back" size={20} color={theme.fg} />
-              <Text style={st.backTxt}>{visibleYear}</Text>
+        <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
+          <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
+          <Text style={st.backTxt}>{visibleYear}</Text>
+        </Pressable>
+        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="box-none">
+          <Pressable onPress={showTimeline ? () => {
+            const [y, m] = (displayDate ?? "").split("-").map(Number);
+            const idx = months.findIndex(item => item.year === y && item.month === m - 1);
+            if (idx >= 0) setScrollIdx(idx);
+            closeDayPage();
+          } : undefined} disabled={!showTimeline} style={{ flexDirection: "row", alignItems: "center" }}>
+            {showTimeline && <View style={[st.iconCircle, { position: "absolute", left: -28 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>}
+            <Text style={st.headerTitle}>{MONTHS[visibleMonth]}</Text>
+          </Pressable>
+        </View>
+        <View style={{ alignItems: "flex-end" }}>
+          {showTimeline && (
+            <Pressable onPress={closeDayPage} style={st.closeBtn}>
+              <Ionicons name="close" size={14} color="rgba(255,255,255,0.5)" />
             </Pressable>
-            <Text style={[st.headerTitle, { position: "absolute", left: 0, right: 0, textAlign: "center" }]}>{MONTHS[visibleMonth]}</Text>
-            <View style={{ width: 60 }} />
-          </>
-        ) : (
-          <>
-            <Pressable onPress={() => onBack(visibleYear)} style={st.backBtn}>
-              <Ionicons name="chevron-back" size={20} color={theme.fg} />
-              <Text style={st.backTxt}>{visibleYear}</Text>
-            </Pressable>
-            <Text style={[st.headerTitle, { position: "absolute", left: 0, right: 0, textAlign: "center" }]}>{MONTHS[visibleMonth]}</Text>
-            <View style={{ width: 60 }} />
-          </>
-        )}
-        <View style={{ width: 60 }} />
+          )}
+        </View>
       </View>
 
       {/* Day labels */}
@@ -243,32 +258,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
         const [oy, om] = displayDate.split("-").map(Number);
         return (
         <Animated.View style={[st.overlay, overlayStyle]}>
-          <View style={st.header}>
-            <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
-              <Ionicons name="chevron-back" size={20} color={theme.fg} />
-              <Text style={st.backTxt}>{displayDate?.split("-")[0]}</Text>
-            </Pressable>
-            <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="box-none">
-              <Pressable onPress={() => {
-                const [y, m] = (displayDate ?? "").split("-").map(Number);
-                const idx = months.findIndex(item => item.year === y && item.month === m - 1);
-                if (idx >= 0) setScrollIdx(idx);
-                closeDayPage();
-              }} style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="chevron-back" size={14} color={theme.fg} style={{ marginRight: 2, marginLeft: -18 }} />
-                <Text style={st.headerTitle}>{displayDate ? MONTHS[Number(displayDate.split("-")[1]) - 1] : ""}</Text>
-              </Pressable>
-            </View>
-            <View style={{ width: 60, alignItems: "flex-end" }}>
-              <Pressable onPress={closeDayPage} style={st.closeBtn}>
-                <Ionicons name="close" size={14} color="#fff" />
-              </Pressable>
-            </View>
-          </View>
-          <View style={st.dayRow}>
-            {DAYS.map(d => <Text key={d} style={st.dayLabel}>{d}</Text>)}
-          </View>
-          <View style={{ flex: 1, overflow: "visible", zIndex: 10 }}>
+          <View style={{ overflow: "visible", zIndex: 10 }}>
             <DayFocusBlock
               day={Number(displayDate.split("-")[2])}
               col={(new Date(oy, om - 1, 1).getDay() + Number(displayDate.split("-")[2]) - 1) % 7}
@@ -277,9 +267,10 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
               offset={new Date(oy, om - 1, 1).getDay()}
               date={displayDate}
               onBack={closeDayPage}
+              onSelectDate={(ds) => { setOpenDate(ds); setDisplayDate(ds); }}
             />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" }}>
             <DayTimeline date={displayDate} filter={[]} />
           </View>
         </Animated.View>
@@ -295,7 +286,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           initialScrollIndex={scrollIdx}
           getItemLayout={(_, index) => ({ length: 320, offset: 320 * index, index })}
           renderItem={({ item }) => (
-            <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} timelineOpen={false} />
+            <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} timelineOpen={false} isActive={item.year === visibleYear && item.month === visibleMonth} />
           )}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
@@ -323,7 +314,8 @@ const st = StyleSheet.create({
     paddingVertical: 12,
     paddingBottom: 14,
   },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
+  backBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
+  iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
   backTxt: { fontSize: 16, color: theme.fg, fontWeight: "600" },
   headerTitle: { fontSize: 17, fontWeight: "700", color: theme.fg },
   dayRow: {
@@ -344,23 +336,26 @@ const st = StyleSheet.create({
   list: { flex: 1 },
   overlay: {
     position: "absolute",
-    top: 0,
+    top: 70,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "#000",
     zIndex: 5,
   },
   closeBtn: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#ff3b30",
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
   monthSection: { paddingHorizontal: 16, paddingTop: 16, minHeight: 320, borderBottomWidth: 0.5, borderBottomColor: "rgba(255,255,255,0.08)" },
-  monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted, marginBottom: 8 },
+  monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted },
+  monthBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.05)" },
+  monthBadgeActive: { backgroundColor: "#fff" },
+  monthTitleActive: { color: "#000" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
   emptyCell: { width: "13.5%", aspectRatio: 1 },
   cell: {
@@ -375,6 +370,7 @@ const st = StyleSheet.create({
   cellFuture: { opacity: 0.3 },
   cellOpen: { zIndex: 10, overflow: "visible" },
   cellSkeleton: { opacity: 0.3 },
+  skeletonDay: { width: 20, height: 8, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.08)" },
   dateNum: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
@@ -389,7 +385,7 @@ const st = StyleSheet.create({
     overflow: "hidden",
     borderBottomWidth: 0.5,
     borderBottomColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "#000",
   },
   timelineHandle: {
     alignItems: "center",

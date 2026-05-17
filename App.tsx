@@ -230,7 +230,7 @@ const st = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
   logoSkeleton: {
