@@ -1,10 +1,57 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../application/AuthContext";
 import { theme } from "../theme/colors";
 
 type Props = { onClose: () => void };
+
+function ResetPasswordScreen({ onBack }: { onBack: () => void }) {
+  const [newPw, setNewPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [status, setStatus] = useState<"" | "success" | "error">("");
+
+  const handleReset = () => {
+    if (!newPw) return;
+    if (newPw !== confirm) { setStatus("error"); return; }
+    setStatus("success");
+    setTimeout(() => { setStatus(""); onBack(); }, 1500);
+  };
+
+  return (
+    <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
+      <View style={st.pwHeader}>
+        <Pressable onPress={onBack} style={[st.backBtn, { position: "absolute", left: 16 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></Pressable>
+        <Text style={st.pwTitle}>Reset Password</Text>
+      </View>
+
+      <View style={{ alignItems: "center", marginBottom: 24 }}>
+        <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.08)" }} />
+      </View>
+
+      <View style={st.section}>
+        <Text style={[st.label, { fontSize: 13, textTransform: "none", marginBottom: 20 }]}>
+          Enter your new password below.
+        </Text>
+
+        <Text style={st.label}>New Password</Text>
+        <TextInput style={st.pwInput} value={newPw} onChangeText={setNewPw}
+          secureTextEntry placeholder="••••••••" placeholderTextColor={theme.fgSubtle} />
+
+        <Text style={st.label}>Confirm Password</Text>
+        <TextInput style={[st.pwInput, status === "error" && st.pwInputError]} value={confirm} onChangeText={setConfirm}
+          secureTextEntry placeholder="••••••••" placeholderTextColor={theme.fgSubtle} />
+
+        {status === "error" && <Text style={st.errorTxt}>Passwords don't match</Text>}
+
+        <Pressable style={st.saveBtn} onPress={handleReset}>
+          <Text style={st.saveTxt}>{status === "success" ? "✓ Password Reset" : "Reset Password"}</Text>
+        </Pressable>
+      </View>
+    </LinearGradient>
+  );
+}
 
 function ChangePasswordScreen({ onBack }: { onBack: () => void }) {
   const [current, setCurrent] = useState("");
@@ -20,11 +67,10 @@ function ChangePasswordScreen({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <View style={st.container}>
+    <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
       <View style={st.pwHeader}>
-        <Pressable onPress={onBack} style={st.backBtn}><Text style={st.backTxt}>‹</Text></Pressable>
+        <Pressable onPress={onBack} style={[st.backBtn, { position: "absolute", left: 16 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></Pressable>
         <Text style={st.pwTitle}>Change Password</Text>
-        <View style={{ width: 32 }} />
       </View>
 
       <View style={st.section}>
@@ -46,7 +92,7 @@ function ChangePasswordScreen({ onBack }: { onBack: () => void }) {
           <Text style={st.saveTxt}>{status === "success" ? "✓ Changed" : "Update Password"}</Text>
         </Pressable>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -55,21 +101,20 @@ export default function ProfileScreen({ onClose }: Props) {
   const [nickname, setNickname] = useState(user?.name ?? "");
   const [saved, setSaved] = useState(false);
   const [showPwChange, setShowPwChange] = useState(false);
+  const [showPwReset, setShowPwReset] = useState(false);
 
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 1500); };
 
+  if (showPwReset) return <ResetPasswordScreen onBack={() => setShowPwReset(false)} />;
   if (showPwChange) return <ChangePasswordScreen onBack={() => setShowPwChange(false)} />;
 
   return (
-    <View style={st.container}>
-      <LinearGradient
-        colors={["rgba(251,191,36,0.6)", "rgba(251,191,36,0.2)", theme.bg, theme.bg]}
-        locations={[0, 0.35, 0.6, 1]}
-        style={st.heroGradient}
-      />
-
+    <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
       <ScrollView style={st.scroll} contentContainerStyle={st.content}>
-        <Pressable onPress={onClose} style={st.backBtn}><Text style={st.backTxt}>‹</Text></Pressable>
+        <View style={st.pwHeader}>
+          <Pressable onPress={onClose} style={[st.backBtn, { position: "absolute", left: 16 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></Pressable>
+          <Text style={st.pwTitle}>Profile</Text>
+        </View>
 
         <View style={st.hero}>
           <View style={st.avatar}>
@@ -104,7 +149,7 @@ export default function ProfileScreen({ onClose }: Props) {
           <Text style={st.signOutTxt}>Log out</Text>
         </Pressable>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -115,51 +160,53 @@ const st = StyleSheet.create({
   content: { paddingBottom: 40 },
   backBtn: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center", justifyContent: "center",
-    marginLeft: 16, marginTop: 12,
   },
   backTxt: { fontSize: 20, color: "#fff", marginTop: -2 },
   pwHeader: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24,
+    position: "relative",
   },
   pwTitle: { fontSize: 18, fontWeight: "700", color: theme.fg },
-  hero: { alignItems: "center", paddingTop: 20, paddingBottom: 32 },
+  hero: { alignItems: "center", paddingTop: 12, paddingBottom: 20 },
   avatar: {
-    width: 140, height: 140, borderRadius: 70,
+    width: 72, height: 72, borderRadius: 36,
     backgroundColor: theme.accent,
-    alignItems: "center", justifyContent: "center", marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.5, shadowRadius: 24,
+    alignItems: "center", justifyContent: "center", marginBottom: 12,
   },
-  avatarTxt: { fontSize: 56, fontWeight: "800", color: "#000" },
-  name: { fontSize: 28, fontWeight: "800", color: theme.fg, letterSpacing: -0.5 },
-  meta: { fontSize: 14, color: theme.fgMuted, marginTop: 4 },
+  avatarTxt: { fontSize: 28, fontWeight: "800", color: "#000" },
+  name: { fontSize: 20, fontWeight: "700", color: theme.fg },
+  meta: { fontSize: 13, color: theme.fgMuted, marginTop: 2 },
   section: { paddingHorizontal: 24, paddingTop: 8, marginBottom: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: theme.fg, marginBottom: 20 },
   label: { fontSize: 12, fontWeight: "600", color: theme.fgMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
   inputRow: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 14, marginBottom: 20,
   },
   at: { fontSize: 16, color: theme.fgMuted, marginRight: 4 },
   input: { flex: 1, paddingVertical: 14, fontSize: 16, color: theme.fg },
   pwInput: {
-    backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 14, paddingVertical: 14, fontSize: 16,
     color: theme.fg, marginBottom: 16,
   },
   pwInputError: { borderWidth: 1, borderColor: theme.danger },
   errorTxt: { fontSize: 12, color: theme.danger, marginBottom: 16 },
   saveBtn: {
-    backgroundColor: theme.accent, borderRadius: 24,
-    paddingVertical: 14, paddingHorizontal: 40, alignItems: "center",
+    backgroundColor: "#0a84ff", borderRadius: 12,
+    paddingVertical: 16, alignItems: "center",
   },
-  saveTxt: { fontSize: 15, fontWeight: "700", color: "#000" },
+  saveTxt: { fontSize: 16, fontWeight: "600", color: "#fff" },
   linkBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 16, paddingVertical: 14,
   },
   linkTxt: { fontSize: 15, color: theme.fg, fontWeight: "500" },
@@ -167,7 +214,7 @@ const st = StyleSheet.create({
   signOutBtn: {
     marginTop: 24, marginHorizontal: 24,
     paddingVertical: 14, alignItems: "center",
-    borderWidth: 1, borderColor: theme.fgMuted, borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 12,
   },
-  signOutTxt: { fontSize: 14, color: theme.fg, fontWeight: "600", letterSpacing: 0.3 },
+  signOutTxt: { fontSize: 16, color: theme.fg, fontWeight: "600" },
 });

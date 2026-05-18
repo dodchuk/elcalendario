@@ -48,12 +48,14 @@ function TagRow({ tag, onDelete }: { tag: { id: string; emoji: string }; onDelet
   );
 
   return (
+    <View style={{ marginBottom: 8 }}>
     <Swipeable ref={swipeRef} renderRightActions={renderRight} overshootRight={false}>
       <View style={st.tagRow}>
         <Text style={st.tagEmoji}>{tag.emoji}</Text>
         <Text style={st.tagLabel}>Swipe to remove</Text>
       </View>
     </Swipeable>
+    </View>
   );
 }
 
@@ -115,31 +117,32 @@ const st = StyleSheet.create({
   wrap: { flex: 1 },
   header: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  title: { fontSize: 20, fontWeight: "700", color: theme.fg },
-  empty: { color: theme.fgMuted, fontSize: 14, textAlign: "center", paddingVertical: 40 },
+  title: { fontSize: 18, fontWeight: "600", color: theme.fg, letterSpacing: -0.3 },
+  empty: { color: theme.fgMuted, fontSize: 14, textAlign: "center", paddingVertical: 40, letterSpacing: 0.2 },
   tagRow: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: theme.surface,
-    paddingVertical: 14, paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border,
+    paddingVertical: 16, paddingHorizontal: 16,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 12,
   },
-  tagEmoji: { fontSize: 28, marginRight: 12 },
-  tagLabel: { fontSize: 13, color: theme.fgMuted },
+  tagEmoji: { fontSize: 24, marginRight: 14 },
+  tagLabel: { fontSize: 13, color: theme.fgMuted, letterSpacing: 0.3 },
   deleteBtn: {
     backgroundColor: "#ff3b30",
     justifyContent: "center", alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginLeft: 8,
   },
   deleteTxt: { color: "#fff", fontSize: 14, fontWeight: "600" },
   addBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: theme.accentSubtle,
-    borderWidth: 1, borderColor: theme.accent,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center", justifyContent: "center",
   },
-  addTxt: { fontSize: 24, lineHeight: 36, color: theme.accent, fontWeight: "300", textAlignVertical: "center" },
+  addTxt: { fontSize: 18, color: "#fff", fontWeight: "400", marginTop: -1 },
   modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "flex-end" },
   picker: {
     backgroundColor: theme.surface,

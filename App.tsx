@@ -24,11 +24,12 @@ import { theme } from "./src/ui/theme/colors";
 
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 
-type Tab = "emojis" | "calendar" | "dashboard";
+type Tab = "emojis" | "calendar" | "dashboard" | "profile";
 
 function Main() {
   const [tab, setTab] = useState<Tab>("calendar");
-  const [showProfile, setShowProfile] = useState(false);
+  const [prevTab, setPrevTab] = useState<Tab>("calendar");
+  const [loading, setLoading] = useState(false);
   const { state } = useStore();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
@@ -44,16 +45,19 @@ function Main() {
 
   return (
     <View style={st.main}>
+      <ScreenProgressBar active={loading} />
       {/* Header */}
+      {tab !== "profile" && (
       <View style={st.appHeader}>
         <View style={st.logoSkeleton} />
-        <Pressable onPress={() => { setShowProfile(true); }} style={st.profileBtn}>
+        <Pressable onPress={() => { setPrevTab(tab); setTab("profile"); }} style={st.profileBtn}>
           <Ionicons name="person-outline" size={18} color={theme.fg} />
         </Pressable>
       </View>
+      )}
 
-      {showProfile ? (
-        <ProfileScreen onClose={() => setShowProfile(false)} />
+      {tab === "profile" ? (
+        <ProfileScreen onClose={() => setTab(prevTab)} />
       ) : (
       <View style={st.body}>
         {tab === "emojis" && (
@@ -93,19 +97,21 @@ function Main() {
 
       {/* Bottom tab bar */}
       <View style={st.tabBar}>
-        <Pressable style={st.tab} onPress={() => { setTab("emojis"); setShowProfile(false); }}>
-          <View style={[st.tabBubble, tab === "emojis" && st.tabBubbleActive]}>
-            <Ionicons name={tab === "emojis" ? "happy" : "happy-outline"} size={22} color={tab === "emojis" ? "#fff" : theme.fgMuted} />
+        <Pressable style={st.tab} onPress={() => { setTab("emojis"); }}>
+          <View style={{ position: "relative" }}>
+            <View style={[st.tabBubble, tab === "emojis" && st.tabBubbleActive]}>
+              <Ionicons name={tab === "emojis" ? "happy" : "happy-outline"} size={22} color={tab === "emojis" ? "#fff" : theme.fgMuted} />
+            </View>
+            <View style={st.tabCountBadge}><Text style={st.tabCountTxt}>{state.tags.length}</Text></View>
           </View>
           <Text style={[st.tabLabel, tab === "emojis" && st.tabLabelActive]}>Emojis</Text>
-          <View style={st.tabCountBadge}><Text style={st.tabCountTxt}>{state.tags.length}</Text></View>
         </Pressable>
-        <Pressable style={st.tabCenter} onPress={() => { setTab("calendar"); setShowProfile(false); }}>
+        <Pressable style={st.tabCenter} onPress={() => { setTab("calendar"); }}>
           <View style={[st.tabCenterCircle, tab === "calendar" && st.tabCenterActive]}>
             <Ionicons name={tab === "calendar" ? "calendar" : "calendar-outline"} size={28} color={tab === "calendar" ? "#fff" : theme.fgMuted} />
           </View>
         </Pressable>
-        <Pressable style={st.tab} onPress={() => { setTab("dashboard"); setShowProfile(false); }}>
+        <Pressable style={st.tab} onPress={() => { setTab("dashboard"); }}>
           <View style={[st.tabBubble, tab === "dashboard" && st.tabBubbleActive]}>
             <Ionicons name={tab === "dashboard" ? "stats-chart" : "stats-chart-outline"} size={22} color={tab === "dashboard" ? "#fff" : theme.fgMuted} />
           </View>
@@ -119,7 +125,7 @@ function Main() {
 type AuthScreen = "welcome" | "signin" | "signup" | "find";
 
 function AuthFlow() {
-  const [screen, setScreen] = useState<AuthScreen>("welcome");
+  const [screen, setScreen] = useState<AuthScreen>("signin");
   const [transitioning, setTransitioning] = useState(false);
 
   const navigate = (to: AuthScreen) => {

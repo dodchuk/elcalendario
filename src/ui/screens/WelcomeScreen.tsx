@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withRepeat,
   withSequence, Easing, withDelay,
@@ -24,10 +25,10 @@ export default function WelcomeScreen({ onSignIn }: Props) {
       ), -1, true)
     );
     // Loading bar fills then navigates
-    barWidth.value = withDelay(400,
-      withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) })
+    barWidth.value = withDelay(200,
+      withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
     );
-    const timer = setTimeout(onSignIn, 2800);
+    const timer = setTimeout(onSignIn, 1400);
     return () => clearTimeout(timer);
   }, []);
 
@@ -42,35 +43,27 @@ export default function WelcomeScreen({ onSignIn }: Props) {
   }));
 
   return (
-    <View style={st.container}>
+    <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
       <Animated.View style={[st.logoWrap, logoStyle]}>
-        <Image source={require("../../../assets/icon.png")} style={st.logo} />
-        <Text style={st.title}>El Calendario</Text>
+        <View style={st.logoSkeleton} />
       </Animated.View>
 
       <View style={st.barTrack}>
         <Animated.View style={[st.barFill, barStyle]} />
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const st = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.bg,
     alignItems: "center",
-    justifyContent: "center",
+    paddingTop: 152,
     padding: 48,
   },
   logoWrap: { alignItems: "center", marginBottom: 80 },
-  logo: { width: 80, height: 80, borderRadius: 20, marginBottom: 20 },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: theme.fg,
-    letterSpacing: -0.5,
-  },
+  logoSkeleton: { width: 60, height: 60, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.08)" },
   barTrack: {
     position: "absolute",
     bottom: 120,

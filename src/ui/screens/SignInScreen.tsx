@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../application/AuthContext";
 import { theme } from "../theme/colors";
 
@@ -14,8 +15,10 @@ export default function SignInScreen({ onBack, onFindAccount }: Props) {
   const handleSubmit = () => { if (email) signIn(email); };
 
   return (
-    <View style={st.container}>
-      <Pressable onPress={onBack}><Text style={st.back}>← Back</Text></Pressable>
+    <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
+      <View style={st.logoWrap}>
+        <View style={st.logoSkeleton} />
+      </View>
       <Text style={st.title}>Sign In</Text>
 
       <Pressable style={st.googleBtn} onPress={handleGoogle}>
@@ -34,30 +37,31 @@ export default function SignInScreen({ onBack, onFindAccount }: Props) {
       </Pressable>
 
       <Pressable onPress={onFindAccount}>
-        <Text style={st.link}>Forgot password? Find your account</Text>
+        <Text style={st.link}>Forgot password?</Text>
       </Pressable>
-    </View>
+    </LinearGradient>
   );
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, padding: 32, justifyContent: "center" },
-  back: { color: theme.fgMuted, fontSize: 16, marginBottom: 24 },
+  container: { flex: 1, padding: 32, paddingTop: 152, backgroundColor: "#000" },
+  logoWrap: { alignItems: "center", marginBottom: 32 },
+  logoSkeleton: { width: 60, height: 60, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.08)" },
   title: { fontSize: 24, fontWeight: "700", color: theme.fg, marginBottom: 32 },
   googleBtn: {
-    backgroundColor: "#fff", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 20,
+    backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 20,
   },
-  googleTxt: { fontSize: 15, fontWeight: "600", color: "#000" },
+  googleTxt: { fontSize: 15, fontWeight: "600", color: theme.fg },
   divider: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   line: { flex: 1, height: 1, backgroundColor: theme.border },
   or: { color: theme.fgMuted, paddingHorizontal: 12, fontSize: 13 },
   input: {
-    borderWidth: 1, borderColor: theme.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
-    color: theme.fg, fontSize: 15, marginBottom: 12,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+    color: theme.fg, fontSize: 15, marginBottom: 12, backgroundColor: "rgba(255,255,255,0.05)",
   },
   submitBtn: {
-    backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8, marginBottom: 16,
+    backgroundColor: "#0a84ff", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8, marginBottom: 16,
   },
-  submitTxt: { fontSize: 16, fontWeight: "600", color: "#000" },
-  link: { color: theme.accent, fontSize: 14, textAlign: "center" },
+  submitTxt: { fontSize: 16, fontWeight: "600", color: "#fff" },
+  link: { color: theme.fgMuted, fontSize: 12, textAlign: "center" },
 });

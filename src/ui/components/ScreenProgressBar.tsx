@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
-import { theme } from "../theme/colors";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function ScreenProgressBar({ active }: { active: boolean }) {
   const width = useSharedValue(0);
@@ -25,7 +25,14 @@ export default function ScreenProgressBar({ active }: { active: boolean }) {
 
   return (
     <View style={st.track}>
-      <Animated.View style={[st.fill, barStyle]} />
+      <Animated.View style={[st.fill, barStyle]}>
+        <LinearGradient
+          colors={["#0a84ff", "#0a84ff"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -42,7 +49,7 @@ const st = StyleSheet.create({
   },
   fill: {
     height: "100%",
-    backgroundColor: theme.accent,
     borderRadius: 1,
+    overflow: "hidden",
   },
 });
