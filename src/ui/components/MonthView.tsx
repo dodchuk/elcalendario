@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, FlatList, Dimensions } from "react-n
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useStore } from "../../application/StoreContext";
+import { useSettings } from "../../application/SettingsContext";
 import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
 import DayFocusBlock from "./DayFocusBlock";
@@ -12,12 +13,12 @@ import { getEmojiGlowColor } from "../theme/tagColors";
 
 const SW = Math.min(Dimensions.get("window").width, 393);
 const SH = Math.min(Dimensions.get("window").height, 852);
-const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const ALL_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 function daysIn(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); }
-function startOff(y: number, m: number) { return new Date(y, m, 1).getDay(); }
+function startOff(y: number, m: number, firstDay: number) { return (new Date(y, m, 1).getDay() - firstDay + 7) % 7; }
 function dateStr(y: number, m: number, d: number) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
 
 // Generate months: 2 years back to current month
@@ -40,9 +41,10 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
   year: number; month: number; openDate: string | null; onSelectDate: (ds: string) => void; timelineOpen: boolean; isActive: boolean;
 }) {
   const { state, dispatch } = useStore();
+  const { settings } = useSettings();
   const today = todayStr();
   const total = daysIn(year, month);
-  const offset = startOff(year, month);
+  const offset = startOff(year, month, settings.firstDay);
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map(t => [t.id, t])), [state.tags]);
   const [cellSize, setCellSize] = useState(44);
 
@@ -151,6 +153,8 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
 }
 
 export default function MonthView({ initialYear, initialMonth, onBack }: Props) {
+  const { settings } = useSettings();
+  const DAYS = [...ALL_DAYS.slice(settings.firstDay), ...ALL_DAYS.slice(0, settings.firstDay)];
   const months = useMemo(() => generateMonths(initialYear, initialMonth), [initialYear, initialMonth]);
   const initialIndex = months.findIndex(m => m.year === initialYear && m.month === initialMonth);
   const [scrollIdx, setScrollIdx] = useState(initialIndex);
@@ -274,10 +278,10 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           <View style={{ overflow: "visible", zIndex: 10 }}>
             <DayFocusBlock
               day={Number(displayDate.split("-")[2])}
-              col={(new Date(oy, om - 1, 1).getDay() + Number(displayDate.split("-")[2]) - 1) % 7}
-              row={Math.floor((new Date(oy, om - 1, 1).getDay() + Number(displayDate.split("-")[2]) - 1) / 7)}
+              col={((new Date(oy, om - 1, 1).getDay() - settings.firstDay + 7) % 7 + Number(displayDate.split("-")[2]) - 1) % 7}
+              row={Math.floor(((new Date(oy, om - 1, 1).getDay() - settings.firstDay + 7) % 7 + Number(displayDate.split("-")[2]) - 1) / 7)}
               totalDays={new Date(oy, om, 0).getDate()}
-              offset={new Date(oy, om - 1, 1).getDay()}
+              offset={(new Date(oy, om - 1, 1).getDay() - settings.firstDay + 7) % 7}
               date={displayDate}
               onBack={closeDayPage}
               onSelectDate={(ds) => { setOpenDate(ds); setDisplayDate(ds); }}

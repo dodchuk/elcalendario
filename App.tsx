@@ -7,6 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { StoreProvider, useStore } from "./src/application/StoreContext";
+import { SettingsProvider, useSettings } from "./src/application/SettingsContext";
 import { AuthProvider, useAuth } from "./src/application/AuthContext";
 import TagManager from "./src/ui/components/TagManager";
 import Calendar from "./src/ui/components/Calendar";
@@ -184,11 +185,13 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <StoreProvider>
+            <SettingsProvider>
             <SafeAreaView style={st.container} edges={["top"]}>
               <WaveBg />
               <Root />
               <StatusBar style="light" />
             </SafeAreaView>
+            </SettingsProvider>
           </StoreProvider>
         </AuthProvider>
       </SafeAreaProvider>

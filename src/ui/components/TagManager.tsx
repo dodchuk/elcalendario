@@ -1,28 +1,24 @@
 import { useState, useRef } from "react";
-import { View, Text, Pressable, FlatList, Modal, StyleSheet, Platform, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, Modal, StyleSheet, Platform, Alert } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { useStore } from "../../application/StoreContext";
 import { theme } from "../theme/colors";
 
-const EMOJIS = [
-  // Transport & Riding
-  "🚴","🏍️","🚗","🚕","🛵","🚲","🛴","🚌","✈️","🚀","⛵","🚶","🏃",
-  // Fitness & Sport
-  "🏋️","🧘","🏊","⚽","🏀","🎾","🥊","🏄","🏂","⛷️","🧗","🤸","💪",
-  // Nature & Outdoors
-  "⛰️","🏕️","🌲","🏖️","🌊","☀️","🌅","🚵","🎣","🏞️",
-  // Social & Love
-  "❤️","💑","👫","🥂","🍷","🎉","🤝","👨‍👩‍👧","👥","💬",
-  // Food & Drink
-  "☕","🍳","🥗","🍕","🍔","🍣","🍰","🍺","🧋","🍽️",
-  // Work & Study
-  "💻","📚","✏️","📝","💼","🎓","📊","🧠","💡","📱",
-  // Health & Wellness
-  "😴","💊","🧘","🏥","🩺","🧹","🛁","💆","🧖","💤",
-  // Hobbies & Fun
-  "🎮","🎬","🎨","🎸","📷","🎤","🎧","📖","🪴","🐕",
-  // Mood & Milestones
-  "🔥","⭐","🏆","✅","🎯","💎","🌟","🚀","💪","🙏",
+const CATEGORIES: { title: string; emojis: string[] }[] = [
+  { title: "Fitness & Sport", emojis: ["🏋️","🧘","🏊","⚽","🏀","🎾","🥊","🏄","🏂","⛷️","🧗","🤸","💪","🤾","🏌️","🏇","🥋","🎳","🏓","⛸️"] },
+  { title: "Transport", emojis: ["🚴","🏍️","🚗","🚕","🛵","🚲","🛴","🚌","✈️","🚀","⛵","🚶","🏃","🛶","🚂","🚁"] },
+  { title: "Nature & Outdoors", emojis: ["⛰️","🏕️","🌲","🏖️","🌊","☀️","🌅","🚵","🎣","🏞️","🌄","🏜️","🌿","🦋"] },
+  { title: "Social & Love", emojis: ["❤️","💑","👫","🥂","🍷","🎉","🤝","👨‍👩‍👧","👥","💬","🫂","💌","👋","🎊"] },
+  { title: "Food & Drink", emojis: ["☕","🍳","🥗","🍕","🍔","🍣","🍰","🍺","🧋","🍽️","🥐","🍜","🥤","🧁","🍇"] },
+  { title: "Work & Study", emojis: ["💻","📚","✏️","📝","💼","🎓","📊","🧠","💡","📱","🖥️","📈","🗂️","⏰","📅"] },
+  { title: "Health & Wellness", emojis: ["😴","💊","🏥","🩺","🧹","🛁","💆","🧖","💤","🥱","🩹","💉","🫁"] },
+  { title: "Creative & Hobbies", emojis: ["🎮","🎬","🎨","🎸","📷","🎤","🎧","📖","🪴","🐕","🎹","🪡","🧶","✂️","🎭","🖌️"] },
+  { title: "Home & Daily", emojis: ["🏠","🛒","👕","🧺","🪥","🚿","🛏️","📦","🔑","🧽","🪣"] },
+  { title: "Finance & Admin", emojis: ["💰","🏦","💳","📋","🧾","📬","🖊️","📎"] },
+  { title: "Mood & Milestones", emojis: ["🔥","⭐","🏆","✅","🎯","💎","🌟","🙏","😊","😢","😤","🥰","🤔","😎"] },
+  { title: "Pets & Animals", emojis: ["🐕","🐈","🐟","🐦","🐢","🐰","🦜","🐾"] },
+  { title: "Spiritual", emojis: ["🕯️","📿","🌙","☮️","🕉️"] },
+  { title: "Education & Growth", emojis: ["🧪","🔬","🌱","📐","🗣️"] },
 ];
 
 let _id = 0;
@@ -93,19 +89,23 @@ export default function TagManager() {
               <Text style={st.pickerTitle}>Pick Emoji</Text>
               <Pressable onPress={() => setOpen(false)}><Text style={st.closeTxt}>✕</Text></Pressable>
             </View>
-            <FlatList
-              data={EMOJIS}
-              numColumns={8}
-              keyExtractor={(e) => e}
-              renderItem={({ item }) => {
-                const used = state.tags.some((t) => t.emoji === item);
-                return (
-                  <Pressable style={[st.emojiCell, used && st.emojiUsed]} onPress={() => !used && add(item)} disabled={used}>
-                    <Text style={st.emojiTxt}>{item}</Text>
-                  </Pressable>
-                );
-              }}
-            />
+            <ScrollView>
+              {CATEGORIES.map(cat => (
+                <View key={cat.title}>
+                  <Text style={st.catTitle}>{cat.title}</Text>
+                  <View style={st.catGrid}>
+                    {cat.emojis.map(item => {
+                      const used = state.tags.some((t) => t.emoji === item);
+                      return (
+                        <Pressable key={item} style={[st.emojiCell, used && st.emojiUsed]} onPress={() => !used && add(item)} disabled={used}>
+                          <Text style={st.emojiTxt}>{item}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -153,7 +153,9 @@ const st = StyleSheet.create({
   pickerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   pickerTitle: { color: theme.fg, fontSize: 16, fontWeight: "600" },
   closeTxt: { color: theme.fgMuted, fontSize: 18 },
-  emojiCell: { flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center", maxWidth: "12.5%" },
+  catTitle: { fontSize: 12, fontWeight: "600", color: theme.fgMuted, marginTop: 12, marginBottom: 6, paddingHorizontal: 4 },
+  catGrid: { flexDirection: "row", flexWrap: "wrap" },
+  emojiCell: { width: "12.5%", aspectRatio: 1, alignItems: "center", justifyContent: "center" },
   emojiUsed: { opacity: 0.2 },
   emojiTxt: { fontSize: 24 },
 });

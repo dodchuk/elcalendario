@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../application/AuthContext";
+import { useSettings } from "../../application/SettingsContext";
 import { theme } from "../theme/colors";
 
 type Props = { onClose: () => void };
@@ -98,6 +99,7 @@ function ChangePasswordScreen({ onBack }: { onBack: () => void }) {
 
 export default function ProfileScreen({ onClose }: Props) {
   const { user, signOut } = useAuth();
+  const { settings, setFirstDay } = useSettings();
   const [nickname, setNickname] = useState(user?.name ?? "");
   const [saved, setSaved] = useState(false);
   const [showPwChange, setShowPwChange] = useState(false);
@@ -135,6 +137,18 @@ export default function ProfileScreen({ onClose }: Props) {
           <Pressable style={st.saveBtn} onPress={handleSave}>
             <Text style={st.saveTxt}>{saved ? "✓ Saved" : "Save"}</Text>
           </Pressable>
+        </View>
+
+        <View style={st.section}>
+          <Text style={st.sectionTitle}>Preferences</Text>
+          <Text style={st.label}>First day of week</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+            {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d, i) => (
+              <Pressable key={d} style={[st.dayBtn, settings.firstDay === i && st.dayBtnActive]} onPress={() => setFirstDay(i)}>
+                <Text style={[st.dayBtnTxt, settings.firstDay === i && st.dayBtnTxtActive]}>{d}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={st.section}>
@@ -203,6 +217,13 @@ const st = StyleSheet.create({
     paddingVertical: 16, alignItems: "center",
   },
   saveTxt: { fontSize: 16, fontWeight: "600", color: "#fff" },
+  dayBtn: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
+  },
+  dayBtnActive: { backgroundColor: "#0a84ff", borderColor: "#0a84ff" },
+  dayBtnTxt: { fontSize: 13, color: theme.fgMuted, fontWeight: "500" },
+  dayBtnTxtActive: { color: "#fff" },
   linkBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12,

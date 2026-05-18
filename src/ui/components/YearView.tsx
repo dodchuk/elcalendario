@@ -2,20 +2,22 @@ import { useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useStore } from "../../application/StoreContext";
+import { useSettings } from "../../application/SettingsContext";
 import { theme } from "../theme/colors";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function daysIn(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); }
-function startOff(y: number, m: number) { return new Date(y, m, 1).getDay(); }
+function startOff(y: number, m: number, firstDay: number) { return (new Date(y, m, 1).getDay() - firstDay + 7) % 7; }
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 
 type Props = { onSelectMonth: (year: number, month: number) => void };
 
 function MiniMonth({ year, month, onPress }: { year: number; month: number; onPress: () => void }) {
   const { state } = useStore();
+  const { settings } = useSettings();
   const total = daysIn(year, month);
-  const offset = startOff(year, month);
+  const offset = startOff(year, month, settings.firstDay);
   const today = new Date();
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
 
