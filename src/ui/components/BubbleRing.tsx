@@ -12,7 +12,7 @@ const SW = Math.min(Dimensions.get("window").width, 393);
 const SH = Math.min(Dimensions.get("window").height, 852);
 
 function flowerPos(i: number, n: number, ringR: number, col: number, row: number, sp?: { x: number; y: number }) {
-  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55);
+  const orbitR = Math.max(R * 2 + GAP, ringR * 0.55, n <= 2 ? R * 3 : 0);
 
   // First column: half circle on right side only
   if (col === 0) {
@@ -42,10 +42,18 @@ function flowerPos(i: number, n: number, ringR: number, col: number, row: number
   let x = Math.cos(angle) * orbitR;
   let y = Math.sin(angle) * orbitR;
 
-  if (left < orbitR && x < 0) x = Math.abs(x);
-  if (right < orbitR && x > 0) x = -Math.abs(x);
-  if (top < orbitR && y < 0) y = Math.abs(y);
-  if (bottom < orbitR && y > 0) y = -Math.abs(y);
+  // For 2 bubbles with limited top/bottom space, spread horizontally
+  if (n <= 2 && (top < orbitR || bottom < orbitR)) {
+    const hAngle = (Math.PI * i) / Math.max(n - 1, 1);
+    x = -orbitR + hAngle * (2 * orbitR / Math.PI) * (Math.PI);
+    x = (i === 0 ? -1 : 1) * orbitR * 0.8;
+    y = (top < orbitR) ? orbitR * 0.4 : -orbitR * 0.4;
+  } else {
+    if (left < orbitR && x < 0) x = Math.abs(x);
+    if (right < orbitR && x > 0) x = -Math.abs(x);
+    if (top < orbitR && y < 0) y = Math.abs(y);
+    if (bottom < orbitR && y > 0) y = -Math.abs(y);
+  }
 
   x = Math.max(-left, Math.min(right, x));
   y = Math.max(-top, Math.min(bottom, y));
