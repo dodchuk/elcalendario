@@ -215,7 +215,11 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
   const timelineStyle = useAnimatedStyle(() => ({ height: tlHeight.value, overflow: "hidden" as const }));
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: tlHeight.value,
-    transform: [{ translateY: (1 - tlHeight.value) * -20 }],
+  }));
+
+  const timelineAnimStyle = useAnimatedStyle(() => ({
+    opacity: tlHeight.value,
+    transform: [{ translateY: (1 - tlHeight.value) * 40 }],
   }));
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
@@ -279,9 +283,9 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
               onSelectDate={(ds) => { setOpenDate(ds); setDisplayDate(ds); }}
             />
           </View>
-          <View style={{ flex: 1, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" }}>
+          <Animated.View style={[{ flex: 1, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" }, timelineAnimStyle]}>
             <DayTimeline date={displayDate} filter={[]} />
-          </View>
+          </Animated.View>
         </Animated.View>
         );
       })()}
