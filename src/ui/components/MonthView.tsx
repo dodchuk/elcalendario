@@ -301,12 +301,10 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           viewabilityConfig={viewabilityConfig}
           showsVerticalScrollIndicator={false}
           scrollEnabled={true}
-          snapToInterval={360}
-          snapToAlignment="start"
-          pagingEnabled={false}
-          decelerationRate={0.9}
+          snapToOffsets={months.map((_, i) => i * 360)}
+          decelerationRate="fast"
           contentContainerStyle={{ paddingBottom: 40 }}
-          style={{ flex: 1 }}
+          style={{ flex: 1, scrollSnapType: "y mandatory" } as any}
         />
       </View>
     </View>
@@ -360,7 +358,7 @@ const st = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 360, borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)" },
+  monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 360, borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)", scrollSnapAlign: "start" } as any,
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted },
   monthBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.05)" },
   monthBadgeActive: { backgroundColor: "#fff" },
