@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, LayoutChangeEvent } from
 import Animated, { useSharedValue, useAnimatedStyle, useFrameCallback, type SharedValue } from "react-native-reanimated";
 import { useStore } from "../../application/StoreContext";
 import { theme } from "../theme/colors";
+import { getEmojiGlowColor } from "../theme/tagColors";
 
 const pad = (n: number) => n.toString().padStart(2, "0");
 const SLOTS = Array.from({ length: 96 }, (_, i) => `${pad(Math.floor(i / 4))}:${pad((i % 4) * 15)}`);
@@ -11,9 +12,9 @@ const R = 21;
 
 type Props = { date: string; filter: string[] };
 
-function FloatBubbleView({ index, xs, ys, emoji, assigned, selected, onPress }: {
+function FloatBubbleView({ index, xs, ys, emoji, assigned, selected, onPress, color }: {
   index: number; xs: SharedValue<number[]>; ys: SharedValue<number[]>;
-  emoji: string; assigned: boolean; selected: boolean; onPress: () => void;
+  emoji: string; assigned: boolean; selected: boolean; onPress: () => void; color?: string;
 }) {
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: (xs.value[index] ?? 0) - R }, { translateY: (ys.value[index] ?? 0) - R }],
@@ -21,7 +22,7 @@ function FloatBubbleView({ index, xs, ys, emoji, assigned, selected, onPress }: 
 
   return (
     <Animated.View style={[st.floatWrap, animStyle]}>
-      <Pressable style={[st.floatBub, assigned && st.floatAssigned, selected && st.floatSelected]} onPress={onPress}>
+      <Pressable style={[st.floatBub, assigned && color ? { backgroundColor: color + "80", boxShadow: `0 0 14px ${color}` } as any : null, selected && st.floatSelected]} onPress={onPress}>
         <Text style={st.floatTxt}>{emoji}</Text>
       </Pressable>
     </Animated.View>
@@ -213,6 +214,7 @@ export default function DayTimeline({ date, filter }: Props) {
               emoji={tagMap[id].emoji}
               assigned={true}
               selected={selected === id}
+              color={getEmojiGlowColor(tagMap[id]?.emoji ?? "", state.tags.findIndex(t => t.id === id))}
               onPress={() => handleBubblePress(id)}
             />
           ) : null)}
@@ -221,10 +223,12 @@ export default function DayTimeline({ date, filter }: Props) {
         {/* Time rows */}
         {SLOTS.map((time) => {
           const isHour = time.endsWith(":00");
-          const hasEmoji = !!slotMap[time];
+          const assignedTagId = slotMap[time];
+          const assignedIdx = assignedTagId ? state.tags.findIndex(t => t.id === assignedTagId) : -1;
+          const assignedColor = assignedTagId ? getEmojiGlowColor(tagMap[assignedTagId]?.emoji ?? "", assignedIdx) : null;
           return (
-            <Pressable key={time} style={[st.row, isHour && st.rowHour, hasEmoji && st.rowAssigned]} onPress={() => assignToSlot(time)}>
-              <Text style={[st.time, isHour && st.timeHour, hasEmoji && st.timeAssigned]}>{time}</Text>
+            <Pressable key={time} style={[st.row, isHour && st.rowHour, assignedColor && { backgroundColor: assignedColor + "18" }]} onPress={() => assignToSlot(time)}>
+              <Text style={[st.time, isHour && st.timeHour, assignedColor && { color: assignedColor, fontWeight: "700" }]}>{time}</Text>
             </Pressable>
           );
         })}
@@ -270,8 +274,8 @@ const st = StyleSheet.create({
     shadowColor: "#ff6400", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10,
   },
   floatSelected: {
-    backgroundColor: "rgba(234,179,8,0.3)",
-    shadowColor: theme.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    shadowColor: "#fff", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8,
   },
   floatTxt: { fontSize: 20 },
   row: {

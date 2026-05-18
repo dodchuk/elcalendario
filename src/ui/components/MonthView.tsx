@@ -144,6 +144,7 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
             </Pressable>
           );
         })}
+        {Array.from({ length: 42 - offset - total }, (_, i) => <View key={`t${i}`} style={st.emptyCell} />)}
       </View>
     </View>
   );
@@ -214,7 +215,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
   const timelineStyle = useAnimatedStyle(() => ({ height: tlHeight.value, overflow: "hidden" as const }));
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: tlHeight.value,
-    transform: [{ translateY: (1 - tlHeight.value) * 20 }],
+    transform: [{ translateY: (1 - tlHeight.value) * -20 }],
   }));
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
@@ -239,7 +240,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           <Pressable onPress={showTimeline ? () => {
             const [y, m] = (displayDate ?? "").split("-").map(Number);
             const idx = months.findIndex(item => item.year === y && item.month === m - 1);
-            if (idx >= 0) listRef.current?.scrollToOffset({ offset: idx * 320, animated: false });
+            if (idx >= 0) listRef.current?.scrollToOffset({ offset: idx * 360, animated: false });
             closeDayPage();
           } : undefined} disabled={!showTimeline} style={{ flexDirection: "row", alignItems: "center" }}>
             {showTimeline && <View style={[st.iconCircle, { position: "absolute", left: -28 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>}
@@ -292,7 +293,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           data={months}
           keyExtractor={item => item.key}
           initialScrollIndex={scrollIdx}
-          getItemLayout={(_, index) => ({ length: 320, offset: 320 * index, index })}
+          getItemLayout={(_, index) => ({ length: 360, offset: 360 * index, index })}
           renderItem={({ item }) => (
             <MonthBlock year={item.year} month={item.month} openDate={openDate} onSelectDate={ds => selectDate(ds || null)} timelineOpen={false} isActive={item.year === visibleYear && item.month === visibleMonth} />
           )}
@@ -300,7 +301,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
           viewabilityConfig={viewabilityConfig}
           showsVerticalScrollIndicator={false}
           scrollEnabled={true}
-          snapToInterval={320}
+          snapToInterval={360}
           snapToAlignment="start"
           pagingEnabled={false}
           decelerationRate={0.9}
@@ -359,7 +360,7 @@ const st = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 320, borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)" },
+  monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 360, borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)" },
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted },
   monthBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.05)" },
   monthBadgeActive: { backgroundColor: "#fff" },
