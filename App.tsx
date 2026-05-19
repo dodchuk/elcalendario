@@ -49,7 +49,7 @@ function Main() {
       <ScreenProgressBar active={loading} />
       {/* Header */}
       {tab !== "profile" && (
-      <View style={st.appHeader}>
+      <View style={[st.appHeader, tab === "emojis" && { backgroundColor: "#0a0a0a" }]}>
         <View style={st.logoSkeleton} />
         <Pressable onPress={() => { setPrevTab(tab); setTab("profile"); }} style={st.profileBtn}>
           <Ionicons name="person-outline" size={18} color={theme.fg} />
@@ -62,9 +62,7 @@ function Main() {
       ) : (
       <View style={st.body}>
         {tab === "emojis" && (
-          <ScrollView style={st.scroll} contentContainerStyle={st.content}>
-            <TagManager />
-          </ScrollView>
+          <TagManager />
         )}
         {tab === "calendar" && (
           calMonth !== null ? (
