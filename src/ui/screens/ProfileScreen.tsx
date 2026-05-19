@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../application/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSettings } from "../../application/SettingsContext";
 import { theme } from "../theme/colors";
 
@@ -102,10 +103,26 @@ export default function ProfileScreen({ onClose }: Props) {
   const { settings, setFirstDay } = useSettings();
   const [nickname, setNickname] = useState(user?.name ?? "");
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem("nickname").then(v => { if (v) setNickname(v); });
+  }, []);
   const [showPwChange, setShowPwChange] = useState(false);
   const [showPwReset, setShowPwReset] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 1500); };
+  const handleNicknameChange = useCallback((v: string) => {
+    setNickname(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      await AsyncStorage.setItem("nickname", v);
+      // TODO: await api.updateNickname(v);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    }, 600);
+  }, []);
+
+
 
   if (showPwReset) return <ResetPasswordScreen onBack={() => setShowPwReset(false)} />;
   if (showPwChange) return <ChangePasswordScreen onBack={() => setShowPwChange(false)} />;
@@ -131,23 +148,51 @@ export default function ProfileScreen({ onClose }: Props) {
           <Text style={st.label}>Nickname</Text>
           <View style={st.inputRow}>
             <Text style={st.at}>@</Text>
-            <TextInput style={st.input} value={nickname} onChangeText={setNickname}
+            <TextInput style={st.input} value={nickname} onChangeText={handleNicknameChange}
               placeholder="nickname" placeholderTextColor={theme.fgSubtle} autoCapitalize="none" />
+            {saved && <Text style={{ fontSize: 12, color: "#22c55e" }}>✓</Text>}
           </View>
-          <Pressable style={st.saveBtn} onPress={handleSave}>
-            <Text style={st.saveTxt}>{saved ? "✓ Saved" : "Save"}</Text>
-          </Pressable>
         </View>
 
         <View style={st.section}>
           <Text style={st.sectionTitle}>Preferences</Text>
           <Text style={st.label}>First day of week</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d, i) => (
               <Pressable key={d} style={[st.dayBtn, settings.firstDay === i && st.dayBtnActive]} onPress={() => setFirstDay(i)}>
                 <Text style={[st.dayBtnTxt, settings.firstDay === i && st.dayBtnTxtActive]}>{d}</Text>
               </Pressable>
             ))}
+          </View>
+        </View>
+
+        <View style={st.section}>
+          <Text style={st.sectionTitle}>Subscription</Text>
+          <View style={st.linkBtn}>
+            <View>
+              <Text style={st.linkTxt}>Free Plan</Text>
+              <Text style={{ fontSize: 12, color: theme.fgMuted, marginTop: 2 }}>Upgrade to unlock all features</Text>
+            </View>
+            <View style={{ backgroundColor: "#0a84ff", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>PRO</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={st.section}>
+          <Text style={st.sectionTitle}>Account authorization</Text>
+          <Text style={{ fontSize: 13, color: theme.fgMuted, marginBottom: 12 }}>Connect to log in with your Google account</Text>
+          <View style={st.linkBtn}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Text style={{ fontSize: 20 }}>G</Text>
+              <View>
+                <Text style={st.linkTxt}>Google</Text>
+                <Text style={{ fontSize: 12, color: theme.fgMuted }}>{user?.email}</Text>
+              </View>
+            </View>
+            <Pressable style={{ backgroundColor: "rgba(255,59,48,0.1)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#ff3b30" }}>Disconnect</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -171,7 +216,7 @@ const st = StyleSheet.create({
   container: { flex: 1 },
   heroGradient: { position: "absolute", top: 0, left: 0, right: 0, height: 320 },
   scroll: { flex: 1 },
-  content: { paddingBottom: 40 },
+  content: { paddingBottom: 80 },
   backBtn: {
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.1)",
@@ -182,6 +227,7 @@ const st = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24,
     position: "relative",
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)",
   },
   pwTitle: { fontSize: 18, fontWeight: "700", color: theme.fg },
   hero: { alignItems: "center", paddingTop: 12, paddingBottom: 20 },
@@ -193,17 +239,17 @@ const st = StyleSheet.create({
   avatarTxt: { fontSize: 28, fontWeight: "800", color: "#000" },
   name: { fontSize: 20, fontWeight: "700", color: theme.fg },
   meta: { fontSize: 13, color: theme.fgMuted, marginTop: 2 },
-  section: { paddingHorizontal: 24, paddingTop: 8, marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: theme.fg, marginBottom: 20 },
+  section: { paddingHorizontal: 24, paddingVertical: 20, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: theme.fg, marginBottom: 12 },
   label: { fontSize: 12, fontWeight: "600", color: theme.fgMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
   inputRow: {
     flexDirection: "row", alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
-    paddingHorizontal: 14, marginBottom: 20,
+    paddingHorizontal: 14, marginBottom: 0,
   },
   at: { fontSize: 16, color: theme.fgMuted, marginRight: 4 },
-  input: { flex: 1, paddingVertical: 14, fontSize: 16, color: theme.fg },
+  input: { flex: 1, paddingVertical: 14, fontSize: 16, color: theme.fg, outlineStyle: "none" } as any,
   pwInput: {
     backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
