@@ -464,39 +464,45 @@ export default function Dashboard() {
 
   return (
     <ScrollView style={st.wrap} contentContainerStyle={st.content}>
-      {/* HUD Cards */}
+      {/* HUD Cards - top */}
       <View style={st.hudRow}>
         <View style={st.hudCard}>
           <Text style={st.hudNum}>{todayCount}</Text>
-          <Text style={st.hudLabel}>Today</Text>
+          <Text style={st.hudLabel}>Tracked Today</Text>
         </View>
         <View style={st.hudCard}>
-          <Text style={st.hudNum}>{viewMode === "year" ? (() => {
-            const daysInYear = new Date(year, 11, 31).getDate() === 31 && new Date(year, 1, 29).getMonth() === 1 ? 366 : 365;
-            const activeDays = Object.keys(state.entries).filter(d => d.startsWith(`${year}-`) && state.entries[d].length > 0).length;
-            return `${activeDays}/${daysInYear}`;
-          })() : `${consistency.tracked}/${consistency.daysInMonth}`}</Text>
-          <Text style={st.hudLabel}>Active days</Text>
-        </View>
-        <View style={st.hudCard}>
-          <Text style={st.hudNum}>{bestPeriod.label}</Text>
-          <Text style={st.hudLabel}>{viewMode === "year" ? "Best month" : "Best day"}</Text>
+          <Text style={st.hudNum}>{(() => {
+            const weekStart = new Date(now);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            let count = 0;
+            for (const [date, ids] of Object.entries(state.entries)) {
+              if (new Date(date) >= weekStart) count += ids.length;
+            }
+            return count;
+          })()}</Text>
+          <Text style={st.hudLabel}>This week</Text>
         </View>
       </View>
 
       {/* Weekly trends */}
       {trends.length > 0 && (
       <View style={st.section}>
-        <Text style={st.sectionTitle}>This week</Text>
+        <Text style={st.sectionTitle}>Weekly trends</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {trends.map(t => (
-            <View key={t.id} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.04)", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 }}>
-              <Text style={{ fontSize: 16 }}>{t.emoji}</Text>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: t.dir === "up" ? "#00ff88" : t.dir === "down" ? "#ff4466" : theme.fgMuted }}>
-                {t.dir === "up" ? "↑" : t.dir === "down" ? "↓" : "→"}{t.tw}
-              </Text>
-            </View>
-          ))}
+          {trends.map(t => {
+            const color = t.dir === "up" ? "#00ff88" : t.dir === "down" ? "#ff4466" : theme.fgMuted;
+            const max = Math.max(t.tw, t.lw, 1);
+            return (
+              <View key={t.id} style={{ alignItems: "center", width: 38 }}>
+                <View style={{ flexDirection: "row", alignItems: "flex-end", height: 32, gap: 1, marginBottom: 3 }}>
+                  <View style={{ width: 7, height: Math.max(3, (t.lw / max) * 32), backgroundColor: color + "33", borderRadius: 2 }} />
+                  <View style={{ width: 7, height: Math.max(3, (t.tw / max) * 32), backgroundColor: color, borderRadius: 2, boxShadow: `0 0 4px ${color}66` } as any} />
+                </View>
+                <Text style={{ fontSize: 14 }}>{t.emoji}</Text>
+                <Text style={{ fontSize: 9, color }}>{t.lw}→{t.tw}</Text>
+              </View>
+            );
+          })}
         </View>
       </View>
       )}
@@ -610,6 +616,25 @@ export default function Dashboard() {
       </View>
 
       {/* Rings - Apple Watch style (year view) */}
+      {/* HUD Cards - after heatmap */}
+      <View style={st.hudRow}>
+        <View style={st.hudCard}>
+          <Text style={st.hudNum}>{viewMode === "year" ? (() => {
+            const daysInYear = new Date(year, 1, 29).getMonth() === 1 ? 366 : 365;
+            const activeDays = Object.keys(state.entries).filter(d => d.startsWith(`${year}-`) && state.entries[d].length > 0).length;
+            return <>{activeDays}<Text style={{ fontSize: 11, color: theme.fgMuted, fontWeight: "400", paddingHorizontal: 4 }}> of </Text>{daysInYear}</>;
+          })() : <>{consistency.tracked}<Text style={{ fontSize: 11, color: theme.fgMuted, fontWeight: "400", paddingHorizontal: 4 }}> of </Text>{consistency.daysInMonth}</>}</Text>
+          <Text style={st.hudLabel}>Tracked days</Text>
+        </View>
+        <View style={st.hudCard}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {viewMode === "month" && <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#ff3b30", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>{bestPeriod.label.split(" ")[0]}</Text></View>}
+            <Text style={st.hudNum}>{viewMode === "year" ? bestPeriod.label : bestPeriod.label.split(" ").slice(1).join(" ")}</Text>
+          </View>
+          <Text style={st.hudLabel}>{viewMode === "year" ? "Peak month" : "Peak day"}</Text>
+        </View>
+      </View>
+
       {/* Streak cards */}
       {topStreaks.length > 0 && (
       <View style={st.section}>
@@ -781,14 +806,32 @@ export default function Dashboard() {
       {/* At this pace */}
       {viewMode === "year" && projections.length > 0 && year === now.getFullYear() && (
       <View style={st.section}>
-        <Text style={st.sectionTitle}>At this pace by Dec</Text>
-        {projections.map((p, i) => (
-          <View key={p.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20 }}>{p.emoji}</Text>
-            <Text style={{ fontSize: 13, color: theme.fgMuted }}>{p.current} now →</Text>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>{p.projected}</Text>
-          </View>
-        ))}
+        <Text style={st.sectionTitle}>By end of year</Text>
+        {projections.map((p, i) => {
+          const weekAvg = Math.round(p.current / ((Math.floor((now.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1) / 7) * 10) / 10;
+          const progress = Math.min(1, p.current / p.projected);
+          const color = getEmojiGlowColor(p.emoji, i);
+          return (
+            <View key={p.id} style={{ marginBottom: 14, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 12, boxShadow: `inset 0 0 12px ${color}11` } as any}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={{ fontSize: 20 }}>{p.emoji}</Text>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}>~{p.projected}</Text>
+                </View>
+                <View style={{ backgroundColor: color + "22", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "600", color }}>{weekAvg} {weekAvg === 1 ? "time" : "times"} per week</Text>
+                </View>
+              </View>
+              <View style={{ height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                <View style={{ width: `${progress * 100}%`, height: "100%", backgroundColor: color, borderRadius: 2 }} />
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+                <Text style={{ fontSize: 10, color: theme.fgMuted }}>{p.current} tracked</Text>
+                <Text style={{ fontSize: 10, color: theme.fgMuted }}>{p.projected} projected</Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
       )}
     </ScrollView>
