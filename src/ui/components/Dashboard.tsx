@@ -17,36 +17,36 @@ function AuraCircle({ colors }: { colors: { color: string; weight: number }[] })
   const rotation = useSharedValue(0);
   useEffect(() => {
     pulse.value = withRepeat(withTiming(1.06, { duration: 2500, easing: Easing.inOut(Easing.ease) }), -1, true);
+    rotation.value = withRepeat(withTiming(360, { duration: 30000, easing: Easing.linear }), -1, false);
   }, []);
 
   const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }],
+    transform: [{ scale: pulse.value }, { rotate: `${rotation.value}deg` }],
   }));
 
   const sorted = [...colors].sort((a, b) => b.weight - a.weight);
 
   return (
     <View style={st.auraWrap}>
-      <Animated.View style={[{ width: 200, height: 200, borderRadius: 100, overflow: "hidden", alignItems: "center", justifyContent: "center" }, pulseStyle]}>
-        {/* Background color mix */}
-        {sorted.map((a, i) => {
-          const angle = (i / sorted.length) * Math.PI * 2;
-          const dist = 30;
-          const x = Math.cos(angle) * dist;
-          const y = Math.sin(angle) * dist;
-          const size = 80 + (a.weight / (sorted[0]?.weight || 1)) * 40;
-          return (
-            <View key={i} style={{
-              position: "absolute",
-              width: size, height: size, borderRadius: size / 2,
-              backgroundColor: a.color,
-              opacity: 0.5,
-              transform: [{ translateX: x }, { translateY: y }],
-              boxShadow: `0 0 30px 15px ${a.color}66`,
-            } as any} />
-          );
-        })}
-      </Animated.View>
+      <Animated.View style={[{ width: 200, height: 200, borderRadius: 100, overflow: "hidden", alignItems: "center", justifyContent: "center", boxShadow: sorted.map((a, i) => `0 0 ${60 - i * 10}px ${15 - i * 2}px ${a.color}44`).join(", ") } as any, pulseStyle]}>
+          {sorted.map((a, i) => {
+            const angle = (i / sorted.length) * Math.PI * 2;
+            const dist = 25;
+            const x = Math.cos(angle) * dist;
+            const y = Math.sin(angle) * dist;
+            const spread = 20 + (a.weight / (sorted[0]?.weight || 1)) * 30;
+            const size = 60 + (a.weight / (sorted[0]?.weight || 1)) * 40;
+            return (
+              <View key={i} style={{
+                position: "absolute",
+                width: size, height: size, borderRadius: size / 2,
+                backgroundColor: a.color + "44",
+                transform: [{ translateX: x }, { translateY: y }],
+                boxShadow: `0 0 ${spread * 2}px ${spread}px ${a.color}aa, inset 0 0 ${spread}px ${spread * 0.5}px ${a.color}66`,
+              } as any} />
+            );
+          })}
+        </Animated.View>
     </View>
   );
 }
@@ -335,42 +335,24 @@ export default function Dashboard() {
         </View>
       </View>
 
-      {/* Aura */}
+      {/* Energy ball with legend */}
       {auraColors.length > 0 && (
-      <View style={st.section}>
-        <AuraCircle colors={auraColors} />
-      </View>
-      )}
-
-      {/* Rings */}
-      {top5.length > 0 && (
       <View style={st.section}>
         <View style={st.ringsRow}>
           <View style={st.ringsLeft}>
-            {top5.slice(0, 2).map((item, i) => (
+            {top5.slice(0, 3).map((item, i) => (
               <View key={item.id} style={st.ringLabel}>
                 <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i) }]} />
                 <Text style={st.ringLabelTxt}>{item.emoji} {item.count}</Text>
               </View>
             ))}
           </View>
-          <View style={st.ringsCenter}>
-            {top5.slice(0, 4).map((item, i) => {
-              const color = getEmojiGlowColor(item.emoji, i);
-              const pct = Math.min(1, item.count / 30);
-              const ringSize = 100 - i * 20;
-              return (
-                <View key={item.id} style={[st.ring, { width: ringSize, height: ringSize, borderRadius: ringSize / 2, borderColor: "rgba(255,255,255,0.06)", borderWidth: 5 }]}>
-                  <View style={[st.ringFill, { width: ringSize, height: ringSize, borderRadius: ringSize / 2, borderColor: color, borderWidth: 5, borderRightColor: "transparent", borderBottomColor: pct < 0.5 ? "transparent" : color, borderLeftColor: pct < 0.75 ? "transparent" : color, transform: [{ rotate: `${pct * 360}deg` }] }]} />
-                </View>
-              );
-            })}
-          </View>
+          <AuraCircle colors={auraColors} />
           <View style={st.ringsRight}>
-            {top5.slice(2, 4).map((item, i) => (
+            {top5.slice(3, 5).map((item, i) => (
               <View key={item.id} style={st.ringLabel}>
                 <Text style={st.ringLabelTxt}>{item.count} {item.emoji}</Text>
-                <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i + 2) }]} />
+                <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i + 3) }]} />
               </View>
             ))}
           </View>
