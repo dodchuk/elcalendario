@@ -14,15 +14,17 @@ export default function FindAccountScreen({ onBack }: Props) {
 
   return (
     <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
-      <Pressable onPress={onBack} style={st.backBtn}>
-        <Ionicons name="chevron-back" size={14} color={theme.fg} />
-      </Pressable>
+      <View style={st.header}>
+        <Pressable onPress={onBack} style={[st.backBtn, { position: "absolute", left: 16 }]}>
+          <Ionicons name="chevron-back" size={14} color={theme.fg} />
+        </Pressable>
+        <Text style={st.headerTitle}>Forgot Password?</Text>
+      </View>
 
       <View style={st.logoWrap}>
         <View style={st.logoSkeleton} />
       </View>
 
-      <Text style={st.title}>Forgot Password?</Text>
       <Text style={st.desc}>Enter your email and we'll send you a reset link.</Text>
 
       {sent ? (
@@ -43,25 +45,30 @@ export default function FindAccountScreen({ onBack }: Props) {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, padding: 32, paddingTop: 152 },
+  container: { flex: 1 },
+  header: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24,
+    position: "relative",
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: theme.fg },
   backBtn: {
-    position: "absolute", top: 60, left: 32,
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center", justifyContent: "center",
   },
-  logoWrap: { alignItems: "center", marginBottom: 32 },
+  logoWrap: { alignItems: "center", marginTop: 82, marginBottom: 32 },
   logoSkeleton: { width: 60, height: 60, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.08)" },
-  title: { fontSize: 24, fontWeight: "700", color: theme.fg, marginBottom: 12 },
-  desc: { fontSize: 14, color: theme.fgMuted, marginBottom: 24, lineHeight: 20 },
+  desc: { fontSize: 14, color: theme.fgMuted, marginBottom: 24, lineHeight: 20, paddingHorizontal: 32 },
   input: {
     borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
-    color: theme.fg, fontSize: 15, marginBottom: 12, backgroundColor: "rgba(255,255,255,0.05)",
+    color: theme.fg, fontSize: 15, marginBottom: 12, backgroundColor: "rgba(255,255,255,0.05)", marginHorizontal: 32,
   },
   submitBtn: {
-    backgroundColor: "#0a84ff", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8,
+    backgroundColor: "#0a84ff", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8, marginHorizontal: 32,
   },
   submitTxt: { fontSize: 16, fontWeight: "600", color: "#fff" },
-  sentBox: { backgroundColor: "rgba(34,197,94,0.1)", borderRadius: 12, padding: 16 },
+  sentBox: { backgroundColor: "rgba(34,197,94,0.1)", borderRadius: 12, padding: 16, marginHorizontal: 32 },
   sentTxt: { color: "#22c55e", fontSize: 14, fontWeight: "500" },
 });
