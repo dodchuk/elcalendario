@@ -17,14 +17,22 @@ function AuraCircle({ colors }: { colors: { color: string; weight: number }[] })
   const rotation = useSharedValue(0);
   useEffect(() => {
     pulse.value = withRepeat(withTiming(1.06, { duration: 2500, easing: Easing.inOut(Easing.ease) }), -1, true);
-    rotation.value = withRepeat(withTiming(360, { duration: 30000, easing: Easing.linear }), -1, false);
-  }, []);
+    if (colors.length > 0) rotation.value = withRepeat(withTiming(360, { duration: 30000, easing: Easing.linear }), -1, false);
+  }, [colors.length]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }, { rotate: `${rotation.value}deg` }],
   }));
 
   const sorted = [...colors].sort((a, b) => b.weight - a.weight);
+
+  if (colors.length === 0) {
+    return (
+      <View style={st.auraWrap}>
+        <Animated.View style={[{ width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }, pulseStyle]} />
+      </View>
+    );
+  }
 
   return (
     <View style={st.auraWrap}>
@@ -508,7 +516,7 @@ export default function Dashboard() {
       )}
 
       {/* Energy ball with legend */}
-      {auraColors.length > 0 && (
+      {(
       <View style={st.section}>
         <Text style={st.sectionTitle}>{viewMode === "month" ? (year === now.getFullYear() && month === now.getMonth() ? "This month" : `${MONTHS[month]} ${year}`) : (year === now.getFullYear() ? "This year" : `${year}`)}</Text>
         <View style={st.ringsRow}>
@@ -520,7 +528,7 @@ export default function Dashboard() {
               </View>
             ))}
           </View>
-          <AuraCircle colors={auraColors} />
+          <AuraCircle colors={auraColors.length > 0 ? auraColors : []} />
           <View style={st.ringsRight}>
             {top5.slice(3, 5).map((item, i) => (
               <View key={item.id} style={st.ringLabel}>
@@ -617,23 +625,28 @@ export default function Dashboard() {
 
       {/* Rings - Apple Watch style (year view) */}
       {/* HUD Cards - after heatmap */}
-      <View style={st.hudRow}>
+      {bestPeriod.count > 0 && (
+      <View style={[st.hudRow, { paddingBottom: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)", marginBottom: 20 }]}>
         <View style={st.hudCard}>
           <Text style={st.hudNum}>{viewMode === "year" ? (() => {
             const daysInYear = new Date(year, 1, 29).getMonth() === 1 ? 366 : 365;
             const activeDays = Object.keys(state.entries).filter(d => d.startsWith(`${year}-`) && state.entries[d].length > 0).length;
-            return <>{activeDays}<Text style={{ fontSize: 11, color: theme.fgMuted, fontWeight: "400", paddingHorizontal: 4 }}> of </Text>{daysInYear}</>;
-          })() : <>{consistency.tracked}<Text style={{ fontSize: 11, color: theme.fgMuted, fontWeight: "400", paddingHorizontal: 4 }}> of </Text>{consistency.daysInMonth}</>}</Text>
-          <Text style={st.hudLabel}>Tracked days</Text>
+            return <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{activeDays}</Text><Text style={{ fontSize: 11, color: theme.fgMuted, marginHorizontal: 6 }}>of</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{daysInYear}</Text></View>;
+          })() : <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{consistency.tracked}</Text><Text style={{ fontSize: 11, color: theme.fgMuted, marginHorizontal: 6 }}>of</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{consistency.daysInMonth}</Text></View>}</Text>
+          <Text style={st.hudLabel}>Days tracked</Text>
         </View>
-        <View style={st.hudCard}>
+        <View style={[st.hudCard, { position: "relative" }]}>
+          <View style={{ position: "absolute", top: 8, right: 10, backgroundColor: "rgba(255,255,255,0.08)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+            <Text style={{ fontSize: 9, color: theme.fgMuted }}>{bestPeriod.count}</Text>
+          </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {viewMode === "month" && <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#ff3b30", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>{bestPeriod.label.split(" ")[0]}</Text></View>}
             <Text style={st.hudNum}>{viewMode === "year" ? bestPeriod.label : bestPeriod.label.split(" ").slice(1).join(" ")}</Text>
           </View>
-          <Text style={st.hudLabel}>{viewMode === "year" ? "Peak month" : "Peak day"}</Text>
+          <Text style={st.hudLabel}>Peak {viewMode === "year" ? "month" : "day"}</Text>
         </View>
       </View>
+      )}
 
       {/* Streak cards */}
       {topStreaks.length > 0 && (
@@ -654,16 +667,30 @@ export default function Dashboard() {
       </View>
       )}
 
+      {/* Routine score */}
+      {routineScore !== null && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Routine score</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Text style={{ fontSize: 28, fontWeight: "700", color: routineScore > 60 ? "#00ff88" : routineScore > 30 ? "#ffcc00" : theme.fgMuted }}>{routineScore}%</Text>
+          <Text style={{ fontSize: 12, color: theme.fgMuted, flex: 1 }}>{routineScore > 60 ? "Very predictable" : routineScore > 30 ? "Somewhat varied" : "Highly diverse"}</Text>
+        </View>
+      </View>
+      )}
+
       {/* New this period */}
       {newEmojis.length > 0 && (
       <View style={st.section}>
         <Text style={st.sectionTitle}>New {viewMode === "month" ? `in ${MONTHS[month]}` : `in ${year}`}</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {newEmojis.map(e => (
-            <View key={e} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ fontSize: 20 }}>{e}</Text>
-            </View>
-          ))}
+          {newEmojis.map((e, i) => {
+            const color = getEmojiGlowColor(e, i);
+            return (
+              <View key={e} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: color + "80", alignItems: "center", justifyContent: "center", boxShadow: `0 0 12px ${color}` } as any}>
+                <Text style={{ fontSize: 20 }}>{e}</Text>
+              </View>
+            );
+          })}
         </View>
       </View>
       )}
@@ -679,19 +706,6 @@ export default function Dashboard() {
             </View>
           ))}
         </View>
-      </View>
-      )}
-
-      {/* Days since last */}
-      {daysSinceLast.length > 0 && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Inactive</Text>
-        {daysSinceLast.map(d => (
-          <View key={d.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20, opacity: 0.5 }}>{d.emoji}</Text>
-            <Text style={{ fontSize: 13, color: d.days > 30 ? "#ff4466" : theme.fgMuted }}>{d.days}d ago</Text>
-          </View>
-        ))}
       </View>
       )}
 
@@ -771,17 +785,6 @@ export default function Dashboard() {
       </View>
       )}
 
-      {/* Routine score */}
-      {routineScore !== null && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Routine score</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <Text style={{ fontSize: 28, fontWeight: "700", color: routineScore > 60 ? "#00ff88" : routineScore > 30 ? "#ffcc00" : theme.fgMuted }}>{routineScore}%</Text>
-          <Text style={{ fontSize: 12, color: theme.fgMuted, flex: 1 }}>{routineScore > 60 ? "Very predictable" : routineScore > 30 ? "Somewhat varied" : "Highly diverse"}</Text>
-        </View>
-      </View>
-      )}
-
       {/* Weekend warrior */}
       {weekendWarriors.length > 0 && (
       <View style={st.section}>
@@ -832,6 +835,18 @@ export default function Dashboard() {
             </View>
           );
         })}
+      </View>
+      )}
+      {/* Inactive */}
+      {daysSinceLast.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Inactive</Text>
+        {daysSinceLast.map(d => (
+          <View key={d.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20, opacity: 0.5 }}>{d.emoji}</Text>
+            <Text style={{ fontSize: 13, color: d.days > 30 ? "#ff4466" : theme.fgMuted }}>{d.days}d ago</Text>
+          </View>
+        ))}
       </View>
       )}
     </ScrollView>
