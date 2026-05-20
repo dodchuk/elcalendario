@@ -6,24 +6,22 @@ import { useStore } from "../../application/StoreContext";
 import { getEmojiGlowColor } from "../theme/tagColors";
 import { theme } from "../theme/colors";
 
-const CATEGORIES: { title: string; emojis: string[] }[] = [
-  { title: "Fitness & Sport", emojis: ["🏋️","🧘","🏊","⚽","🏀","🎾","🥊","🏄","🏂","⛷️","🧗","🤸","💪","🤾","🏌️","🏇","🥋","🎳","🏓","⛸️"] },
-  { title: "Transport", emojis: ["🚴","🏍️","🏎️","🚕","🛵","🛴","🚌","✈️","⛵","🚶","🏃","🛶","🚂","🚁"] },
-  { title: "Nature & Outdoors", emojis: ["⛰️","🌲","🏖️","🌊","☀️","🌅","🌄","🎣","🏜️","🌿","🦋"] },
-  { title: "Social & Love", emojis: ["❤️","👫","🥂","🍷","🎉","💌","🎊","🎂","🎁"] },
-  { title: "Food & Drink", emojis: ["☕","🍳","🥗","🍕","🍔","🍰","🍺","🧋","🍽️","🥐","🥤"] },
-  { title: "Work & Study", emojis: ["💻","📚","✏️","💼","🎓","🧠","💡","⏰"] },
-  { title: "Health & Wellness", emojis: ["😴","💊","🧹","🛁","💆","🧖","💉","🦷","🧊"] },
-  { title: "Creative & Hobbies", emojis: ["🎮","🎨","🎸","🎤","🎧","🪴","🎹","🧶","✂️","🎭","🍿"] },
-  { title: "Home & Daily", emojis: ["🏠","👕","🪥","🚿","🛏️","📦","🔑","🧽"] },
-  { title: "Finance & Admin", emojis: ["💰","🧾","📬"] },
-  { title: "Mood & Milestones", emojis: ["🔥","⭐","🏆","💎"] },
-  { title: "Pets & Animals", emojis: ["🐕","🐟","🦜"] },
-  { title: "Spiritual", emojis: ["🕯️","🌙"] },
-  { title: "Education & Growth", emojis: ["🌱"] },
+const ALL_EMOJIS = [
+  "🏋️","🧘","🏊","⚽","🏀","🎾","🥊","🏄","🏂","⛷️","🧗","🤸","💪","🤾","🏌️","🏇","🥋","🎳","🏓","⛸️",
+  "🚴","🏍️","🏎️","🚕","🛵","🛴","🚌","✈️","⛵","🚶","🏃","🛶","🚂","🚁",
+  "⛰️","🌲","🏖️","🌊","☀️","🌅","🌄","🎣","🏜️","🌿","🦋",
+  "❤️","👫","🥂","🍷","🎉","💌","🎊","🎂","🎁",
+  "☕","🍳","🥗","🍕","🍔","🍰","🍺","🧋","🍽️","🥐","🥤",
+  "💻","📚","✏️","💼","🎓","🧠","💡","⏰",
+  "😴","💊","🧹","🛁","💆","🧖","💉","🦷","🧊",
+  "🎮","🎨","🎸","🎤","🎧","🪴","🎹","🧶","✂️","🎭",
+  "🏠","👕","🪥","🚿","🛏️","📦","🔑","🧽",
+  "💰","🧾","📬",
+  "🔥","⭐","🏆","💎",
+  "🐕","🐟","🦜",
+  "🕯️","🌙",
+  "🌱",
 ];
-
-const ALL_EMOJIS = CATEGORIES.flatMap(c => c.emojis);
 const N = ALL_EMOJIS.length;
 const R = 22;
 const COLS = 6;
