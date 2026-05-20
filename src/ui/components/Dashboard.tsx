@@ -313,6 +313,155 @@ export default function Dashboard() {
       }));
   }, [state.entries, tagMap, state.tags, year, month, viewMode]);
 
+
+  // Week-over-week trends per emoji
+  const trends = useMemo(() => {
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const thisWeek: Record<string, number> = {};
+    const lastWeek: Record<string, number> = {};
+    for (const [date, ids] of Object.entries(state.entries)) {
+      const d = new Date(date);
+      for (const id of ids) {
+        if (d >= thisWeekStart) thisWeek[id] = (thisWeek[id] ?? 0) + 1;
+        else if (d >= lastWeekStart && d < thisWeekStart) lastWeek[id] = (lastWeek[id] ?? 0) + 1;
+      }
+    }
+    return Object.keys({ ...thisWeek, ...lastWeek })
+      .map(id => {
+        const tw = thisWeek[id] ?? 0;
+        const lw = lastWeek[id] ?? 0;
+        if (tw === 0 && lw === 0) return null;
+        const dir = tw > lw ? "up" : tw < lw ? "down" : "same";
+        return { id, emoji: tagMap[id]?.emoji ?? "?", tw, lw, dir };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b!.tw + b!.lw) - (a!.tw + a!.lw))
+      .slice(0, 8) as { id: string; emoji: string; tw: number; lw: number; dir: string }[];
+  }, [state.entries, tagMap]);
+
+  // Days since last use (for inactive emojis)
+  const daysSinceLast = useMemo(() => {
+    const todayMs = now.getTime();
+    return state.tags
+      .map(tag => {
+        const dates = Object.keys(state.entries).filter(d => (state.entries[d] ?? []).includes(tag.id)).sort();
+        if (dates.length === 0) return null;
+        const last = dates[dates.length - 1];
+        const days = Math.floor((todayMs - new Date(last).getTime()) / 86400000);
+        if (days < 7) return null;
+        return { id: tag.id, emoji: tag.emoji, days };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.days - a!.days)
+      .slice(0, 5) as { id: string; emoji: string; days: number }[];
+  }, [state.entries, state.tags]);
+
+  // Habit formation (emojis approaching 21-day streak)
+  const habitProgress = useMemo(() => {
+    return state.tags
+      .map(tag => {
+        const dates = Object.keys(state.entries)
+          .filter(d => (state.entries[d] ?? []).includes(tag.id))
+          .sort();
+        if (dates.length === 0) return null;
+        // Find current streak from today backwards
+        let streak = 0;
+        const d = new Date(now);
+        for (let i = 0; i < 66; i++) {
+          const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+          if ((state.entries[ds] ?? []).includes(tag.id)) streak++;
+          else if (i > 0) break;
+          else break;
+          d.setDate(d.getDate() - 1);
+        }
+        if (streak < 3 || streak >= 21) return null;
+        return { id: tag.id, emoji: tag.emoji, streak, progress: streak / 21 };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.progress - a!.progress)
+      .slice(0, 4) as { id: string; emoji: string; streak: number; progress: number }[];
+  }, [state.entries, state.tags]);
+
+
+  // Habit strength (consistency % × longest streak)
+  const habitStrength = useMemo(() => {
+    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const totalDays = viewMode === "month" ? new Date(year, month + 1, 0).getDate() : (year === now.getFullYear() ? Math.floor((now.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1 : 365);
+    return state.tags
+      .map(tag => {
+        const dates = Object.keys(state.entries)
+          .filter(d => d.startsWith(prefix) && (state.entries[d] ?? []).includes(tag.id))
+          .sort();
+        if (dates.length < 3) return null;
+        const consistency = dates.length / totalDays;
+        let best = 1, cur = 1;
+        for (let i = 1; i < dates.length; i++) {
+          if (new Date(dates[i]).getTime() - new Date(dates[i-1]).getTime() === 86400000) cur++;
+          else { best = Math.max(best, cur); cur = 1; }
+        }
+        best = Math.max(best, cur);
+        const score = Math.round(consistency * best * 100);
+        return { id: tag.id, emoji: tag.emoji, score, consistency: Math.round(consistency * 100), best };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.score - a!.score)
+      .slice(0, 5) as { id: string; emoji: string; score: number; consistency: number; best: number }[];
+  }, [state.entries, state.tags, year, month, viewMode]);
+
+
+  // Established habits (>70% consistency for 30+ days)
+  const establishedHabits = useMemo(() => {
+    return state.tags
+      .map(tag => {
+        const dates = Object.keys(state.entries)
+          .filter(d => (state.entries[d] ?? []).includes(tag.id))
+          .sort();
+        if (dates.length < 21) return null;
+        const first = new Date(dates[0]);
+        const duration = Math.floor((now.getTime() - first.getTime()) / 86400000);
+        if (duration < 30) return null;
+        const consistency = Math.round((dates.length / duration) * 100);
+        if (consistency < 70) return null;
+        return { id: tag.id, emoji: tag.emoji, consistency, duration };
+      })
+      .filter(Boolean) as { id: string; emoji: string; consistency: number; duration: number }[];
+  }, [state.entries, state.tags]);
+
+
+  // Monthly trend chart data (last 6 months per top emoji)
+  const trendChart = useMemo(() => {
+    const months: string[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
+    }
+    const topIds = top5.slice(0, 4).map(t => t.id);
+    const data = topIds.map(id => ({
+      id,
+      emoji: tagMap[id]?.emoji ?? "?",
+      values: months.map(m => {
+        let count = 0;
+        for (const [date, ids] of Object.entries(state.entries)) {
+          if (date.startsWith(m) && ids.includes(id)) count++;
+        }
+        return count;
+      }),
+      trend: 0,
+    }));
+    // Calculate trend direction
+    for (const d of data) {
+      const recent = d.values[5] + d.values[4];
+      const older = d.values[0] + d.values[1];
+      d.trend = recent > older ? 1 : recent < older ? -1 : 0;
+    }
+    return { months: months.map(m => MONTHS[parseInt(m.split("-")[1]) - 1]), data };
+  }, [state.entries, tagMap, top5]);
+
+
+
   return (
     <ScrollView style={st.wrap} contentContainerStyle={st.content}>
       {/* HUD Cards */}
@@ -335,9 +484,27 @@ export default function Dashboard() {
         </View>
       </View>
 
+      {/* Weekly trends */}
+      {trends.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>This week</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {trends.map(t => (
+            <View key={t.id} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.04)", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 }}>
+              <Text style={{ fontSize: 16 }}>{t.emoji}</Text>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: t.dir === "up" ? "#00ff88" : t.dir === "down" ? "#ff4466" : theme.fgMuted }}>
+                {t.dir === "up" ? "↑" : t.dir === "down" ? "↓" : "→"}{t.tw}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      )}
+
       {/* Energy ball with legend */}
       {auraColors.length > 0 && (
       <View style={st.section}>
+        <Text style={st.sectionTitle}>{viewMode === "month" ? (year === now.getFullYear() && month === now.getMonth() ? "This month" : `${MONTHS[month]} ${year}`) : (year === now.getFullYear() ? "This year" : `${year}`)}</Text>
         <View style={st.ringsRow}>
           <View style={st.ringsLeft}>
             {top5.slice(0, 3).map((item, i) => (
@@ -490,6 +657,66 @@ export default function Dashboard() {
       </View>
       )}
 
+      {/* Days since last */}
+      {daysSinceLast.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Inactive</Text>
+        {daysSinceLast.map(d => (
+          <View key={d.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20, opacity: 0.5 }}>{d.emoji}</Text>
+            <Text style={{ fontSize: 13, color: d.days > 30 ? "#ff4466" : theme.fgMuted }}>{d.days}d ago</Text>
+          </View>
+        ))}
+      </View>
+      )}
+
+      {/* Habit formation */}
+      {habitProgress.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Forming habits</Text>
+        {habitProgress.map(h => (
+          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 }}>
+            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
+            <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <View style={{ width: `${h.progress * 100}%`, height: "100%", borderRadius: 3, backgroundColor: "#00ff88" }} />
+            </View>
+            <Text style={{ fontSize: 11, color: theme.fgMuted }}>{h.streak}/21</Text>
+          </View>
+        ))}
+      </View>
+      )}
+
+      {/* Habit strength */}
+      {habitStrength.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Habit strength</Text>
+        {habitStrength.map(h => (
+          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: h.score > 50 ? "#00ff88" : h.score > 20 ? "#ffcc00" : theme.fgMuted }}>{h.score}</Text>
+                <Text style={{ fontSize: 10, color: theme.fgMuted }}>{h.consistency}% × {h.best}d</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+      )}
+
+      {/* Established habits */}
+      {establishedHabits.length > 0 && (
+      <View style={st.section}>
+        {establishedHabits.map(h => (
+          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6, backgroundColor: "rgba(0,255,136,0.06)", paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 }}>
+            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
+            <Text style={{ fontSize: 12, color: "#00ff88" }}>is a habit</Text>
+            <Text style={{ fontSize: 10, color: theme.fgMuted }}>({h.consistency}% for {h.duration}d)</Text>
+          </View>
+        ))}
+      </View>
+      )}
+
       {/* Combos */}
       {combos.length > 0 && (
       <View style={st.section}>
@@ -587,7 +814,7 @@ const st = StyleSheet.create({
   toggleTxt: { fontSize: 12, color: theme.fgMuted, fontWeight: "500" },
   toggleTxtActive: { color: "#fff" },
   yearTxt: { fontSize: 15, fontWeight: "600", color: theme.fg },
-  section: { marginBottom: 24 },
+  section: { marginBottom: 20, paddingBottom: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)" },
   sectionTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted, marginBottom: 12 },
   heatGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   heatMonth: { width: "23%", marginBottom: 10 },
