@@ -107,16 +107,16 @@ export default function Dashboard() {
     return bestCount > 0 ? { label: `${new Date(bestDate).getDate()} ${MONTHS[month]}`, count: bestCount } : { label: "—", count: 0 };
   }, [state.entries, viewMode, year, month]);
   const consistency = useMemo(() => {
-    const prefix = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-    const daysSoFar = now.getDate();
+    const prefix = `${year}-${pad(month+1)}`;
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const daysSoFar = (year === now.getFullYear() && month === now.getMonth()) ? now.getDate() : daysInMonth;
     let tracked = 0;
     for (let d = 1; d <= daysSoFar; d++) {
       const ds = `${prefix}-${pad(d)}`;
       if ((state.entries[ds] ?? []).length > 0) tracked++;
     }
     return { tracked, total: daysSoFar, daysInMonth };
-  }, [state.entries]);
+  }, [state.entries, year, month]);
 
   const maxHeat = useMemo(() => {
     let max = 1;
@@ -648,13 +648,14 @@ export default function Dashboard() {
       </View>
       )}
 
+      {/* === STREAKS & HABITS === */}
+
       {/* Streak cards */}
       {topStreaks.length > 0 && (
       <View style={st.section}>
         <View style={st.streakCards}>
           {topStreaks.slice(0, 6).map((s, i) => {
             const color = getEmojiGlowColor(s.emoji, i);
-            const tier = "";
             return (
               <View key={s.id} style={[st.streakCard, { borderColor: color + "44" }]}>
                 <Text style={st.streakEmoji}>{s.emoji}</Text>
@@ -664,6 +665,35 @@ export default function Dashboard() {
             );
           })}
         </View>
+      </View>
+      )}
+
+      {/* Habit formation */}
+      {habitProgress.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Forming habits</Text>
+        {habitProgress.map(h => (
+          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 }}>
+            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
+            <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <View style={{ width: `${h.progress * 100}%`, height: "100%", borderRadius: 3, backgroundColor: "#00ff88" }} />
+            </View>
+            <Text style={{ fontSize: 11, color: theme.fgMuted }}>{h.streak}/21</Text>
+          </View>
+        ))}
+      </View>
+      )}
+
+      {/* Established habits */}
+      {establishedHabits.length > 0 && (
+      <View style={st.section}>
+        {establishedHabits.map(h => (
+          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6, backgroundColor: "rgba(0,255,136,0.06)", paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 }}>
+            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
+            <Text style={{ fontSize: 12, color: "#00ff88" }}>is a habit</Text>
+            <Text style={{ fontSize: 10, color: theme.fgMuted }}>({h.consistency}% for {h.duration}d)</Text>
+          </View>
+        ))}
       </View>
       )}
 
@@ -677,6 +707,60 @@ export default function Dashboard() {
         </View>
       </View>
       )}
+
+      {/* === PATTERNS === */}
+
+      {/* Combos */}
+      {combos.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Always together</Text>
+        {combos.map((c, i) => (
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20 }}>{c.a}</Text>
+            <Text style={{ fontSize: 12, color: theme.fgMuted }}>+</Text>
+            <Text style={{ fontSize: 20 }}>{c.b}</Text>
+            <Text style={{ fontSize: 12, color: theme.fgMuted, marginLeft: "auto" }}>{c.count}×</Text>
+          </View>
+        ))}
+      </View>
+      )}
+
+      {/* Weekend warrior */}
+      {weekendWarriors.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Weekend warrior</Text>
+        {weekendWarriors.map((w, i) => (
+          <View key={w.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20 }}>{w.emoji}</Text>
+            <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", flexDirection: "row", overflow: "hidden" }}>
+              <View style={{ width: `${(1 - w.ratio) * 100}%`, backgroundColor: "rgba(255,255,255,0.2)" }} />
+              <View style={{ width: `${w.ratio * 100}%`, backgroundColor: "#00ccff" }} />
+            </View>
+            <Text style={{ fontSize: 10, color: theme.fgMuted, width: 44 }}>{w.we}w/{w.wd}d</Text>
+          </View>
+        ))}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+          <Text style={{ fontSize: 9, color: theme.fgMuted }}>Weekday</Text>
+          <Text style={{ fontSize: 9, color: "#00ccff" }}>Weekend</Text>
+        </View>
+      </View>
+      )}
+
+      {/* Replacements */}
+      {replacements.length > 0 && (
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Replaced</Text>
+        {replacements.map((r, i) => (
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20, opacity: 0.4 }}>{r.from}</Text>
+            <Text style={{ fontSize: 12, color: theme.fgMuted }}>→</Text>
+            <Text style={{ fontSize: 20 }}>{r.to}</Text>
+          </View>
+        ))}
+      </View>
+      )}
+
+      {/* === CHANGES === */}
 
       {/* New this period */}
       {newEmojis.length > 0 && (
@@ -709,104 +793,22 @@ export default function Dashboard() {
       </View>
       )}
 
-      {/* Habit formation */}
-      {habitProgress.length > 0 && (
+      {/* Inactive */}
+      {daysSinceLast.length > 0 && (
       <View style={st.section}>
-        <Text style={st.sectionTitle}>Forming habits</Text>
-        {habitProgress.map(h => (
-          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 }}>
-            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
-            <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-              <View style={{ width: `${h.progress * 100}%`, height: "100%", borderRadius: 3, backgroundColor: "#00ff88" }} />
-            </View>
-            <Text style={{ fontSize: 11, color: theme.fgMuted }}>{h.streak}/21</Text>
+        <Text style={st.sectionTitle}>Inactive</Text>
+        {daysSinceLast.map(d => (
+          <View key={d.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <Text style={{ fontSize: 20, opacity: 0.5 }}>{d.emoji}</Text>
+            <Text style={{ fontSize: 13, color: d.days > 30 ? "#ff4466" : theme.fgMuted }}>{d.days}d ago</Text>
           </View>
         ))}
       </View>
       )}
 
-      {/* Habit strength */}
-      {habitStrength.length > 0 && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Habit strength</Text>
-        {habitStrength.map(h => (
-          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Text style={{ fontSize: 14, fontWeight: "700", color: h.score > 50 ? "#00ff88" : h.score > 20 ? "#ffcc00" : theme.fgMuted }}>{h.score}</Text>
-                <Text style={{ fontSize: 10, color: theme.fgMuted }}>{h.consistency}% × {h.best}d</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-      )}
+      {/* === FUTURE === */}
 
-      {/* Established habits */}
-      {establishedHabits.length > 0 && (
-      <View style={st.section}>
-        {establishedHabits.map(h => (
-          <View key={h.id} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6, backgroundColor: "rgba(0,255,136,0.06)", paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 }}>
-            <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
-            <Text style={{ fontSize: 12, color: "#00ff88" }}>is a habit</Text>
-            <Text style={{ fontSize: 10, color: theme.fgMuted }}>({h.consistency}% for {h.duration}d)</Text>
-          </View>
-        ))}
-      </View>
-      )}
-
-      {/* Combos */}
-      {combos.length > 0 && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Always together</Text>
-        {combos.map((c, i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20 }}>{c.a}</Text>
-            <Text style={{ fontSize: 12, color: theme.fgMuted }}>+</Text>
-            <Text style={{ fontSize: 20 }}>{c.b}</Text>
-            <Text style={{ fontSize: 12, color: theme.fgMuted, marginLeft: "auto" }}>{c.count}×</Text>
-          </View>
-        ))}
-      </View>
-      )}
-
-      {/* Replacements */}
-      {replacements.length > 0 && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Replaced</Text>
-        {replacements.map((r, i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20, opacity: 0.4 }}>{r.from}</Text>
-            <Text style={{ fontSize: 12, color: theme.fgMuted }}>→</Text>
-            <Text style={{ fontSize: 20 }}>{r.to}</Text>
-          </View>
-        ))}
-      </View>
-      )}
-
-      {/* Weekend warrior */}
-      {weekendWarriors.length > 0 && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Weekend warrior</Text>
-        {weekendWarriors.map((w, i) => (
-          <View key={w.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20 }}>{w.emoji}</Text>
-            <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", flexDirection: "row", overflow: "hidden" }}>
-              <View style={{ width: `${(1 - w.ratio) * 100}%`, backgroundColor: "rgba(255,255,255,0.2)" }} />
-              <View style={{ width: `${w.ratio * 100}%`, backgroundColor: "#00ccff" }} />
-            </View>
-            <Text style={{ fontSize: 10, color: theme.fgMuted, width: 44 }}>{w.we}w/{w.wd}d</Text>
-          </View>
-        ))}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
-          <Text style={{ fontSize: 9, color: theme.fgMuted }}>Weekday</Text>
-          <Text style={{ fontSize: 9, color: "#00ccff" }}>Weekend</Text>
-        </View>
-      </View>
-      )}
-
-      {/* At this pace */}
+      {/* By end of year */}
       {viewMode === "year" && projections.length > 0 && year === now.getFullYear() && (
       <View style={st.section}>
         <Text style={st.sectionTitle}>By end of year</Text>
@@ -835,18 +837,6 @@ export default function Dashboard() {
             </View>
           );
         })}
-      </View>
-      )}
-      {/* Inactive */}
-      {daysSinceLast.length > 0 && (
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>Inactive</Text>
-        {daysSinceLast.map(d => (
-          <View key={d.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <Text style={{ fontSize: 20, opacity: 0.5 }}>{d.emoji}</Text>
-            <Text style={{ fontSize: 13, color: d.days > 30 ? "#ff4466" : theme.fgMuted }}>{d.days}d ago</Text>
-          </View>
-        ))}
       </View>
       )}
     </ScrollView>
