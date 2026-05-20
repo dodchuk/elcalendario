@@ -16,33 +16,33 @@ function AuraCircle({ colors }: { colors: { color: string; weight: number }[] })
   const pulse = useSharedValue(1);
   const rotation = useSharedValue(0);
   useEffect(() => {
-    pulse.value = withRepeat(withTiming(1.08, { duration: 2500, easing: Easing.inOut(Easing.ease) }), -1, true);
-    rotation.value = withRepeat(withTiming(360, { duration: 12000, easing: Easing.linear }), -1, false);
+    pulse.value = withRepeat(withTiming(1.06, { duration: 2500, easing: Easing.inOut(Easing.ease) }), -1, true);
   }, []);
 
   const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }, { rotate: `${rotation.value}deg` }],
+    transform: [{ scale: pulse.value }],
   }));
 
-  const sorted = [...colors].sort((a, b) => a.weight - b.weight);
+  const sorted = [...colors].sort((a, b) => b.weight - a.weight);
 
-  // Blurred color clouds flowing into each other
   return (
     <View style={st.auraWrap}>
       <Animated.View style={[{ width: 200, height: 200, borderRadius: 100, overflow: "hidden", alignItems: "center", justifyContent: "center" }, pulseStyle]}>
+        {/* Background color mix */}
         {sorted.map((a, i) => {
           const angle = (i / sorted.length) * Math.PI * 2;
-          const dist = 25;
+          const dist = 30;
           const x = Math.cos(angle) * dist;
           const y = Math.sin(angle) * dist;
+          const size = 80 + (a.weight / (sorted[0]?.weight || 1)) * 40;
           return (
             <View key={i} style={{
               position: "absolute",
-              width: 120, height: 120, borderRadius: 60,
+              width: size, height: size, borderRadius: size / 2,
               backgroundColor: a.color,
-              opacity: 0.6,
+              opacity: 0.5,
               transform: [{ translateX: x }, { translateY: y }],
-              boxShadow: `0 0 40px 20px ${a.color}`,
+              boxShadow: `0 0 30px 15px ${a.color}66`,
             } as any} />
           );
         })}
