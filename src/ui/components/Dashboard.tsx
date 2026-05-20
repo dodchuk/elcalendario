@@ -1,166 +1,154 @@
 import { useMemo } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useStore } from "../../application/StoreContext";
-import { findStreaks, longestStreaks } from "../../domain/streaks";
+import { getEmojiGlowColor } from "../theme/tagColors";
 import { theme } from "../theme/colors";
 
-const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const pad = (n: number) => n.toString().padStart(2, "0");
+function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function dateStr(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
-type Props = {
-  year: number; month: number;
-  filter: string[];
-  onFilter: (ids: string[]) => void;
-  streakRange: { start: string; end: string } | null;
-  onStreakRange: (range: { start: string; end: string } | null) => void;
-};
-
-function useDashboardData(year: number, month: number) {
+export default function Dashboard() {
   const { state } = useStore();
-  const prefix = `${year}-${(month + 1).toString().padStart(2, "0")}`;
-  const tagMap = useMemo(() => Object.fromEntries(state.tags.map((t) => [t.id, t])), [state.tags]);
+  const tagMap = useMemo(() => Object.fromEntries(state.tags.map(t => [t.id, t])), [state.tags]);
+  const today = todayStr();
 
-  const stats = useMemo(() => {
-    const c: Record<string, number> = {};
+  // HUD: today's count
+  const todayCount = (state.entries[today] ?? []).length;
+
+  // HUD: current streak (consecutive days with any activity, ending today or yesterday)
+  const streak = useMemo(() => {
+    let count = 0;
+    const d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const ds = dateStr(d);
+      if ((state.entries[ds] ?? []).length > 0) count++;
+      else if (i > 0) break; // allow today to be empty
+      else break;
+      d.setDate(d.getDate() - 1);
+    }
+    return count;
+  }, [state.entries]);
+
+  // HUD: this week vs last week
+  const weekComparison = useMemo(() => {
+    const now = new Date();
+    const dow = now.getDay();
+    let thisWeek = 0, lastWeek = 0;
+    for (let i = 0; i <= dow; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      thisWeek += (state.entries[dateStr(d)] ?? []).length;
+    }
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - dow - 1 - i);
+      lastWeek += (state.entries[dateStr(d)] ?? []).length;
+    }
+    const pct = lastWeek === 0 ? 100 : Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+    return { thisWeek, lastWeek, pct };
+  }, [state.entries]);
+
+  // Heatmap: last 12 weeks (84 days)
+  const heatmap = useMemo(() => {
+    const cells: { date: string; count: number }[] = [];
+    const d = new Date();
+    d.setDate(d.getDate() - 83);
+    for (let i = 0; i < 84; i++) {
+      cells.push({ date: dateStr(d), count: (state.entries[dateStr(d)] ?? []).length });
+      d.setDate(d.getDate() + 1);
+    }
+    return cells;
+  }, [state.entries]);
+
+  const maxHeat = Math.max(1, ...heatmap.map(c => c.count));
+
+  // Top 5 most used this month
+  const top5 = useMemo(() => {
+    const now = new Date();
+    const prefix = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+    const counts: Record<string, number> = {};
     for (const [date, ids] of Object.entries(state.entries)) {
       if (!date.startsWith(prefix)) continue;
-      for (const id of ids) if (tagMap[id]) c[id] = (c[id] ?? 0) + 1;
+      for (const id of ids) {
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
     }
-    return Object.entries(c).sort((a, b) => b[1] - a[1]);
-  }, [state.entries, prefix, tagMap]);
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, count]) => ({ id, emoji: tagMap[id]?.emoji ?? "?", count }));
+  }, [state.entries, tagMap]);
 
-  const streaks = useMemo(() => findStreaks(state.entries, state.tags, year, month), [state.entries, state.tags, year, month]);
-  const best = useMemo(() => longestStreaks(streaks), [streaks]);
-  const topStreaks = useMemo(() =>
-    Object.values(best).filter((s) => tagMap[s.tagId]).sort((a, b) => b.length - a.length).slice(0, 5),
-  [best, tagMap]);
-
-  return { state, tagMap, stats, best, topStreaks };
-}
-
-export function TagFilters({ year, month, filter, onFilter, streakRange, onStreakRange }: Props) {
-  const { state, tagMap, stats, best } = useDashboardData(year, month);
-
-  if (!state.tags.length) return null;
-
-  const handleClick = (id: string) => {
-    if (filter.includes(id)) {
-      const next = filter.filter((f) => f !== id);
-      onFilter(next);
-      if (next.length === 0) onStreakRange(null);
-    } else {
-      onFilter([...filter, id]);
-      const b = best[id];
-      if (b) onStreakRange({ start: b.start, end: b.end });
-    }
-  };
+  const maxBar = Math.max(1, ...top5.map(t => t.count));
 
   return (
-    <View style={st.filterWrap}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filterRow}>
-        {filter.length > 0 && (
-          <Pressable style={st.clearPill} onPress={() => { onFilter([]); onStreakRange(null); }}>
-            <Text style={st.clearTxt}>✕</Text>
-          </Pressable>
-        )}
-        {stats.map(([id, count]) => {
-          const tag = tagMap[id];
-          if (!tag) return null;
-          const active = filter.includes(id);
-          const streak = best[id];
-          return (
-            <Pressable key={id} style={[st.pill, active && st.pillActive]} onPress={() => handleClick(id)}>
-              <Text style={st.pillEmoji}>{tag.emoji}</Text>
-              <Text style={[st.pillCount, active && st.pillCountActive]}>{count}d</Text>
-              {streak && <Text style={st.pillStreak}>🔥{streak.length}</Text>}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
+    <ScrollView style={st.wrap} contentContainerStyle={st.content}>
+      {/* HUD Cards */}
+      <View style={st.hudRow}>
+        <View style={st.hudCard}>
+          <Text style={st.hudNum}>{todayCount}</Text>
+          <Text style={st.hudLabel}>Today</Text>
+        </View>
+        <View style={st.hudCard}>
+          <Text style={st.hudNum}>{streak}</Text>
+          <Text style={st.hudLabel}>🔥 Streak</Text>
+        </View>
+        <View style={st.hudCard}>
+          <Text style={[st.hudNum, { color: weekComparison.pct >= 0 ? "#00ff88" : "#ff4466" }]}>
+            {weekComparison.pct >= 0 ? "↑" : "↓"}{Math.abs(weekComparison.pct)}%
+          </Text>
+          <Text style={st.hudLabel}>vs last week</Text>
+        </View>
+      </View>
 
-export function StreakPanel({ year, month, filter, onFilter, streakRange, onStreakRange }: Props) {
-  const { tagMap, best, topStreaks } = useDashboardData(year, month);
+      {/* Heatmap */}
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Last 12 weeks</Text>
+        <View style={st.heatGrid}>
+          {heatmap.map((cell, i) => (
+            <View
+              key={i}
+              style={[st.heatCell, { opacity: cell.count === 0 ? 0.1 : 0.2 + (cell.count / maxHeat) * 0.8 }]}
+            />
+          ))}
+        </View>
+      </View>
 
-  const visibleStreaks = topStreaks;
-
-  if (!visibleStreaks.length) return null;
-
-  const handleStreakClick = (streak: typeof topStreaks[0]) => {
-    const active = streakRange?.start === streak.start && streakRange?.end === streak.end;
-    if (active) { onStreakRange(null); onFilter([]); }
-    else { onStreakRange({ start: streak.start, end: streak.end }); onFilter([streak.tagId]); }
-  };
-
-  return (
-    <View style={st.streakWrap}>
-      <Text style={st.streakTitle}>Longest Streaks</Text>
-      {visibleStreaks.map((streak) => {
-        const tag = tagMap[streak.tagId];
-        const active = filter.includes(streak.tagId) && streakRange?.start === streak.start && streakRange?.end === streak.end;
-        const startDay = parseInt(streak.start.slice(-2));
-        const endDay = parseInt(streak.end.slice(-2));
-        return (
-          <Pressable
-            key={`${streak.tagId}-${streak.start}`}
-            style={[st.streakRow, active && st.streakRowActive]}
-            onPress={() => handleStreakClick(streak)}
-          >
-            <Text style={st.streakEmoji}>{tag.emoji}</Text>
-            <Text style={st.streakDays}>{MONTHS_SHORT[month]} {startDay} – {endDay}</Text>
-            <Text style={st.streakBadge}>{streak.length}d</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-// Keep default export for backward compat
-export default function Dashboard(props: Props) {
-  return (
-    <>
-      <TagFilters {...props} />
-      <StreakPanel {...props} />
-    </>
+      {/* Top 5 */}
+      <View style={st.section}>
+        <Text style={st.sectionTitle}>Top this month</Text>
+        {top5.length === 0 && <Text style={st.empty}>No data yet</Text>}
+        {top5.map((item, i) => (
+          <View key={item.id} style={st.barRow}>
+            <Text style={st.barEmoji}>{item.emoji}</Text>
+            <View style={st.barTrack}>
+              <View style={[st.barFill, { width: `${(item.count / maxBar) * 100}%`, backgroundColor: getEmojiGlowColor(item.emoji, i) }]} />
+            </View>
+            <Text style={st.barCount}>{item.count}</Text>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
 const st = StyleSheet.create({
-  filterWrap: { marginBottom: 12 },
-  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 4, alignItems: "center" },
-  pill: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: theme.surfaceHover,
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8,
-    borderWidth: 1, borderColor: theme.border,
+  wrap: { flex: 1 },
+  content: { padding: 16, paddingBottom: 40 },
+  hudRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
+  hudCard: {
+    flex: 1, backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 12, paddingVertical: 16, alignItems: "center",
   },
-  pillActive: {
-    backgroundColor: theme.accentSubtle,
-    borderColor: theme.accent,
-  },
-  pillEmoji: { fontSize: 18, marginRight: 4 },
-  pillCount: { fontSize: 12, color: theme.fgMuted, fontWeight: "600" },
-  pillCountActive: { color: theme.accent },
-  pillStreak: { fontSize: 10, color: "#ff8c00", marginLeft: 3 },
-  clearPill: {
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: theme.surfaceHover, borderWidth: 1, borderColor: theme.border,
-    alignItems: "center", justifyContent: "center",
-  },
-  clearTxt: { fontSize: 14, color: theme.fgMuted },
-  streakWrap: {
-    marginTop: 12, paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border,
-  },
-  streakTitle: { fontSize: 13, fontWeight: "600", color: theme.fgMuted, marginBottom: 8 },
-  streakRow: {
-    flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 8,
-    borderRadius: 8, marginBottom: 2,
-  },
-  streakRowActive: { backgroundColor: "rgba(255,140,0,0.12)" },
-  streakEmoji: { fontSize: 20, marginRight: 8 },
-  streakDays: { fontSize: 12, color: theme.fgMuted, flex: 1 },
-  streakBadge: { fontSize: 11, fontWeight: "700", color: "#ff8c00", backgroundColor: "rgba(255,140,0,0.15)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  hudNum: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 4 },
+  hudLabel: { fontSize: 11, color: theme.fgMuted },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted, marginBottom: 12 },
+  heatGrid: { flexDirection: "row", flexWrap: "wrap", gap: 3 },
+  heatCell: { width: 10, height: 10, borderRadius: 2, backgroundColor: "#00ff88" },
+  empty: { color: theme.fgMuted, fontSize: 13 },
+  barRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  barEmoji: { fontSize: 20, width: 32 },
+  barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" },
+  barFill: { height: "100%", borderRadius: 4 },
+  barCount: { fontSize: 12, color: theme.fgMuted, width: 28, textAlign: "right" },
 });

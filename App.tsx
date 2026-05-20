@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, ScrollView, View, Text, Pressable, Platform } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, useFrameCallback, withRepeat, withTiming, Easing, type SharedValue } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -10,10 +10,10 @@ import { StoreProvider, useStore } from "./src/application/StoreContext";
 import { SettingsProvider, useSettings } from "./src/application/SettingsContext";
 import { AuthProvider, useAuth } from "./src/application/AuthContext";
 import TagManager from "./src/ui/components/TagManager";
+import Dashboard from "./src/ui/components/Dashboard";
 import Calendar from "./src/ui/components/Calendar";
 import YearView from "./src/ui/components/YearView";
 import MonthView from "./src/ui/components/MonthView";
-import Dashboard, { TagFilters, StreakPanel } from "./src/ui/components/Dashboard";
 import DayTimeline from "./src/ui/components/DayTimeline";
 import WelcomeScreen from "./src/ui/screens/WelcomeScreen";
 import SignInScreen from "./src/ui/screens/SignInScreen";
@@ -46,6 +46,7 @@ function Main() {
 
   return (
     <View style={st.main}>
+      {tab === "calendar" && <LavaBg />}
       <ScreenProgressBar active={loading} />
       {/* Header */}
       {tab !== "profile" && (
@@ -76,20 +77,7 @@ function Main() {
           )
         )}
         {tab === "dashboard" && (
-          <ScrollView style={st.scroll} contentContainerStyle={st.content}>
-            <TagFilters
-              year={year} month={month} filter={filter} onFilter={setFilter}
-              streakRange={streakRange} onStreakRange={setStreakRange}
-            />
-            <Calendar
-              year={year} month={month} onNav={onNav}
-              filter={filter} streakRange={streakRange} onSelectDate={setSelectedDate}
-            />
-            <StreakPanel
-              year={year} month={month} filter={filter} onFilter={setFilter}
-              streakRange={streakRange} onStreakRange={setStreakRange}
-            />
-          </ScrollView>
+          <Dashboard />
         )}
       </View>
       )}
@@ -114,7 +102,7 @@ function Main() {
           <View style={[st.tabBubble, tab === "dashboard" && st.tabBubbleActive]}>
             <Ionicons name={tab === "dashboard" ? "stats-chart" : "stats-chart-outline"} size={22} color={tab === "dashboard" ? "#fff" : theme.fgMuted} />
           </View>
-          <Text style={[st.tabLabel, tab === "dashboard" && st.tabLabelActive]}>Stats</Text>
+          <Text style={[st.tabLabel, tab === "dashboard" && st.tabLabelActive]}>Dashboard</Text>
         </Pressable>
       </View>
     </View>
@@ -148,31 +136,115 @@ function Root() {
   return user ? <Main /> : <AuthFlow />;
 }
 
-function getDayPhaseColors(): [string, string, string, string] {
+
+
+const BLOB_COUNT = 12;
+function getDayPhase() {
   const h = new Date().getHours();
-  if (h >= 5 && h < 8) return ["#1a0a2e", "#2d1b4e", "#4a2060", "#1a0a2e"]; // dawn
-  if (h >= 8 && h < 12) return ["#f8f4e8", "#fff8e1", "#fef3cd", "#f8f4e8"]; // morning
-  if (h >= 12 && h < 17) return ["#e8f4fd", "#ffffff", "#f0f7ff", "#e8f4fd"]; // day
-  if (h >= 17 && h < 20) return ["#1a1020", "#2a1530", "#3d1f3e", "#1a1020"]; // sunset
-  return ["#0a0a14", "#0d1020", "#0a0f1a", "#0a0a14"]; // night
+  if (h >= 6 && h < 12) return 0; // morning
+  if (h >= 12 && h < 18) return 1; // daytime
+  if (h >= 18 && h < 22) return 2; // evening
+  return 3; // night
 }
 
-function WaveBg() {
+const BLOB_COLOR_SETS = [
+  // Morning - soft warm pastels
+  ["#ffaa4420", "#ffcc6618", "#ff884418", "#ffdd8815", "#ffbb5518", "#ffcc7715", "#ff995520", "#ffee9915", "#ffaa6618", "#ffbb7720", "#ffcc8818", "#ffdd9920"],
+  // Daytime - bright energetic
+  ["#ff004433", "#aa00ff30", "#ff660028", "#00ffaa25", "#ff00aa28", "#4400ff28", "#ff220030", "#cc00ff25", "#ff880025", "#00ddaa25", "#ff00cc25", "#6600ff28"],
+  // Evening - deep warm
+  ["#ff220030", "#cc004428", "#ff440025", "#aa003325", "#ff330028", "#dd005525", "#ff110030", "#bb004425", "#ff550025", "#cc003328", "#ff440028", "#dd004430"],
+  // Night - cool deep blues/purples
+  ["#1100ff25", "#2200aa22", "#0033cc20", "#1100dd22", "#0022bb20", "#2200cc18", "#0011aa25", "#1100bb18", "#0033aa20", "#2200bb22", "#0022cc20", "#1100aa22"],
+];
+
+const BLOB_COLORS = BLOB_COLOR_SETS[getDayPhase()];
+const BLOB_SIZES = [100, 120, 110, 140, 90, 130, 105, 115, 95, 135, 100, 125];
+
+function LavaBlob({ index, xs, ys, glow }: { index: number; xs: SharedValue<number[]>; ys: SharedValue<number[]>; glow: SharedValue<number[]> }) {
+  const size = BLOB_SIZES[index];
+  const baseColor = BLOB_COLORS[index];
+  const style = useAnimatedStyle(() => {
+    const g = glow.value[index] ?? 0;
+    const opacity = 0.25 + g * 0.2;
+    return {
+      position: "absolute" as const,
+      left: `${xs.value[index] ?? 50}%` as any,
+      top: `${ys.value[index] ?? 50}%` as any,
+      width: size + g * 40,
+      height: size + g * 40,
+      borderRadius: (size + g * 40) / 2,
+      backgroundColor: baseColor,
+      opacity,
+      transform: [{ translateX: -(size + g * 40) / 2 }, { translateY: -(size + g * 40) / 2 }],
+    };
+  });
+  return <Animated.View style={style} />;
+}
+
+const PHASE_BG = ["#1a1008", "#0a0a14", "#140808", "#060810"];
+
+function LavaBg() {
+  const xs = useSharedValue(Array.from({ length: BLOB_COUNT }, () => 20 + Math.random() * 60));
+  const ys = useSharedValue(Array.from({ length: BLOB_COUNT }, () => 20 + Math.random() * 60));
+  const vxs = useSharedValue(Array.from({ length: BLOB_COUNT }, () => (Math.random() - 0.5) * 0.04));
+  const vys = useSharedValue(Array.from({ length: BLOB_COUNT }, () => 0.02 + Math.random() * 0.03));
+  const heat = useSharedValue(Array.from({ length: BLOB_COUNT }, () => Math.random()));
+  const glow = useSharedValue(Array.from({ length: BLOB_COUNT }, () => 0));
+  const glowTimer = useSharedValue(0);
+
+  useFrameCallback(() => {
+    "worklet";
+    const ax = xs.value.slice();
+    const ay = ys.value.slice();
+    const avx = vxs.value.slice();
+    const avy = vys.value.slice();
+    const ah = heat.value.slice();
+
+    for (let i = 0; i < BLOB_COUNT; i++) {
+      if (ay[i] > 75) ah[i] = Math.min(1, ah[i] + 0.003);
+      if (ay[i] < 25) ah[i] = Math.max(0, ah[i] - 0.002);
+      ah[i] += (Math.random() - 0.5) * 0.001;
+      const buoyancy = (ah[i] - 0.5) * 0.06;
+      avy[i] += buoyancy * 0.01;
+      avy[i] *= 0.995;
+      avx[i] += (Math.random() - 0.5) * 0.001;
+      avx[i] *= 0.99;
+      ax[i] += avx[i];
+      ay[i] -= avy[i];
+      if (ax[i] < 15) avx[i] += 0.005;
+      if (ax[i] > 85) avx[i] -= 0.005;
+      if (ay[i] < 5) { avy[i] *= 0.9; ah[i] = Math.max(0, ah[i] - 0.01); }
+      if (ay[i] > 95) { avy[i] *= 0.9; ah[i] = Math.min(1, ah[i] + 0.01); }
+      ax[i] = Math.max(5, Math.min(95, ax[i]));
+      ay[i] = Math.max(2, Math.min(98, ay[i]));
+    }
+    xs.value = ax;
+    ys.value = ay;
+    vxs.value = avx;
+    vys.value = avy;
+    heat.value = ah;
+
+    // Random glow pulse — gentle and slow
+    const ag = glow.value.slice();
+    glowTimer.value += 1;
+    if (glowTimer.value > 300) {
+      glowTimer.value = 0;
+      const target = Math.floor(Math.random() * BLOB_COUNT);
+      for (let i = 0; i < BLOB_COUNT; i++) ag[i] = i === target ? 1 : ag[i];
+    }
+    for (let i = 0; i < BLOB_COUNT; i++) {
+      if (ag[i] > 0) ag[i] = Math.max(0, ag[i] - 0.003);
+    }
+    glow.value = ag;
+  });
+
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <LinearGradient
-        colors={getDayPhaseColors()}
-        locations={[0, 0.3, 0.65, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={st.gridLines}>
-        {Array.from({ length: 8 }, (_, i) => (
-          <View key={`h${i}`} style={[st.gridLineH, { top: `${(i + 1) * 12}%` as any }]} />
-        ))}
-        {Array.from({ length: 5 }, (_, i) => (
-          <View key={`v${i}`} style={[st.gridLineV, { left: `${(i + 1) * 20}%` as any }]} />
-        ))}
-      </View>
+    <View style={[StyleSheet.absoluteFill, { overflow: "hidden" }]} pointerEvents="none">
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: PHASE_BG[getDayPhase()] }]} />
+      {Array.from({ length: BLOB_COUNT }, (_, i) => (
+        <LavaBlob key={i} index={i} xs={xs} ys={ys} glow={glow} />
+      ))}
     </View>
   );
 }
@@ -185,7 +257,6 @@ export default function App() {
           <StoreProvider>
             <SettingsProvider>
             <SafeAreaView style={st.container} edges={["top"]}>
-              <WaveBg />
               <Root />
               <StatusBar style="light" />
             </SafeAreaView>
@@ -203,23 +274,6 @@ export default function App() {
 }
 
 const st = StyleSheet.create({
-  gridLines: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gridLineH: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.04)",
-  },
-  gridLineV: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.04)",
-  },
   webFrame: {
     flex: 1,
     alignItems: "center",

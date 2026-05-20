@@ -369,8 +369,8 @@ const st = StyleSheet.create({
   monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 360, borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)", scrollSnapAlign: "start" } as any,
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted },
   monthBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.05)" },
-  monthBadgeActive: { backgroundColor: "#fff" },
-  monthTitleActive: { color: "#000" },
+  monthBadgeActive: { backgroundColor: "rgba(255,100,0,0.5)", shadowColor: "#ff6400", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 14 },
+  monthTitleActive: { color: "#fff" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
   emptyCell: { width: "13.5%", aspectRatio: 1 },
   cell: {

@@ -105,7 +105,11 @@ const st = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: "#ff3b30",
+    backgroundColor: "rgba(255,59,48,0.76)",
+    shadowColor: "#ff3b30",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 14,
   },
   monthLabel: {
     fontSize: 14,
