@@ -65,7 +65,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
   const today = todayStr();
   const now = new Date();
   const [year, setYearLocal] = useState(initYear);
-  const [viewMode, setViewMode] = useState<"all" | "year" | "month">(initViewMode);
+  const [viewMode, setViewMode] = useState<"all" | "year" | "month">("month");
   const [month, setMonthLocal] = useState(initMonth);
 
   useEffect(() => { setYearLocal(initYear); }, [initYear]);
@@ -109,7 +109,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
         if (ids.length > 0) { const ym = date.slice(0, 7); monthCounts[ym] = (monthCounts[ym] ?? 0) + ids.length; }
       }
       const best = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0];
-      if (!best) return { label: "—", count: 0 };
+      if (!best) return { label: "Today", count: 0 };
       const [y, m] = best[0].split("-");
       const FULL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
       return { label: `${FULL_MONTHS[parseInt(m) - 1]} ${y}`, count: best[1] };
@@ -122,7 +122,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
       const max = Math.max(...months);
       const mi = months.indexOf(max);
       const FULL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-      return max > 0 ? { label: FULL_MONTHS[mi], count: max } : { label: "—", count: 0 };
+      return max > 0 ? { label: FULL_MONTHS[mi], count: max } : { label: "Today", count: 0 };
     }
     // Best day: single day with most activities
     const prefix = `${year}-${pad(month + 1)}`;
@@ -130,7 +130,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
     for (const [date, ids] of Object.entries(state.entries)) {
       if (date.startsWith(prefix) && ids.length > bestCount) { bestCount = ids.length; bestDate = date; }
     }
-    return bestCount > 0 ? { label: `${new Date(bestDate).getDate()} ${MONTHS[month]}`, count: bestCount } : { label: "—", count: 0 };
+    return bestCount > 0 ? { label: `${new Date(bestDate).getDate()} ${MONTHS[month]}`, count: bestCount } : { label: "Today", count: 0 };
   }, [state.entries, viewMode, year, month]);
   const consistency = useMemo(() => {
     const prefix = `${year}-${pad(month+1)}`;
@@ -538,22 +538,6 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
             })()}</Text>
             <Text style={st.hudLabel}>Tracked This Week</Text>
           </View>
-          <View style={st.hudCard}>
-            <Text style={st.hudNum}>{(() => {
-              const weekStart = new Date(now);
-              weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-              const counts: Record<string, number> = {};
-              for (const [date, ids] of Object.entries(state.entries)) {
-                if (new Date(date) >= weekStart) for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
-              }
-              const top = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-              if (top.length === 0) return "—";
-              const maxCount = top[0][1];
-              const tied = top.filter(([, c]) => c === maxCount);
-              return `${tied.map(([id]) => tagMap[id]?.emoji ?? "").join("")} ${maxCount}`;
-            })()}</Text>
-            <Text style={st.hudLabel}>Top Emoji</Text>
-          </View>
         </View>
         )}
       </View>
@@ -609,7 +593,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
               </View>
             ))}
           </View>
-          <AuraCircle colors={auraColors.length > 0 ? auraColors : []} />
+          <AuraCircle colors={auraColors.length > 0 ? auraColors : [{ color: "#ffffff", weight: 1 }]} />
           <View style={st.ringsRight}>
             {top5.slice(3, 5).map((item, i) => (
               <View key={item.id} style={st.ringLabel}>
@@ -683,9 +667,9 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
           })() : viewMode === "year" ? (() => {
             const daysInYear = new Date(year, 1, 29).getMonth() === 1 ? 366 : 365;
             const activeDays = Object.keys(state.entries).filter(d => d.startsWith(`${year}-`) && state.entries[d].length > 0).length;
-            return <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{activeDays}</Text><Text style={{ fontSize: 11, color: theme.fgMuted, marginHorizontal: 6 }}>of</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{daysInYear}</Text></View>;
-          })() : <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{consistency.tracked}</Text><Text style={{ fontSize: 11, color: theme.fgMuted, marginHorizontal: 6 }}>of</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{consistency.daysInMonth}</Text></View>}</Text>
-          <Text style={st.hudLabel}>Days tracked</Text>
+            return <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{activeDays}</Text><Text style={{ fontSize: 22, color: theme.fgMuted }}>/</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{daysInYear}</Text></View>;
+          })() : <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{consistency.tracked}</Text><Text style={{ fontSize: 22, color: theme.fgMuted }}>/</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{consistency.daysInMonth}</Text></View>}</Text>
+          <Text style={st.hudLabel}>Days Tracked</Text>
         </View>
         <View style={[st.hudCard, { position: "relative" }]}>
           <View style={{ position: "absolute", top: 8, right: 10, backgroundColor: "rgba(255,255,255,0.08)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
@@ -695,7 +679,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
             {viewMode === "month" && <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#ff3b30", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>{bestPeriod.label.split(" ")[0]}</Text></View>}
             <Text style={st.hudNum}>{viewMode === "month" ? bestPeriod.label.split(" ").slice(1).join(" ") : bestPeriod.label}</Text>
           </View>
-          <Text style={st.hudLabel}>Peak {viewMode === "all" ? "month" : viewMode === "year" ? "month" : "day"}</Text>
+          <Text style={st.hudLabel}>Peak {viewMode === "all" ? "Month" : viewMode === "year" ? "Month" : "Day"}</Text>
         </View>
       </View>
       )}
