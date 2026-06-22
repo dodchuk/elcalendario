@@ -71,13 +71,14 @@ function Main() {
               initialYear={year}
               initialMonth={calMonth}
               onBack={(y) => { setYear(y); setCalMonth(null); }}
+              onMonthChange={(y, m) => { setYear(y); setMonth(m); setCalMonth(m); }}
             />
           ) : (
-            <YearView onSelectMonth={(y, m) => { setYear(y); setCalMonth(m); }} />
+            <YearView initialYear={year} onSelectMonth={(y, m) => { setYear(y); setCalMonth(m); }} onYearChange={setYear} />
           )
         )}
         {tab === "dashboard" && (
-          <Dashboard />
+          <Dashboard year={year} month={calMonth ?? month} initViewMode={calMonth !== null ? "month" : "year"} onChangeYear={setYear} onChangeMonth={(m) => { setMonth(m); setCalMonth(m); }} />
         )}
       </View>
       )}

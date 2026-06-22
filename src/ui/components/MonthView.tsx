@@ -35,7 +35,7 @@ function generateMonths(startYear: number, startMonth: number) {
   return months;
 }
 
-type Props = { initialYear: number; initialMonth: number; onBack: (year: number) => void };
+type Props = { initialYear: number; initialMonth: number; onBack: (year: number) => void; onMonthChange?: (year: number, month: number) => void };
 
 function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActive }: {
   year: number; month: number; openDate: string | null; onSelectDate: (ds: string) => void; timelineOpen: boolean; isActive: boolean;
@@ -152,7 +152,7 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
   );
 }
 
-export default function MonthView({ initialYear, initialMonth, onBack }: Props) {
+export default function MonthView({ initialYear, initialMonth, onBack, onMonthChange }: Props) {
   const { settings } = useSettings();
   const DAYS = [...ALL_DAYS.slice(settings.firstDay), ...ALL_DAYS.slice(0, settings.firstDay)];
   const months = useMemo(() => generateMonths(initialYear, initialMonth), [initialYear, initialMonth]);
@@ -163,6 +163,8 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
   const [openDate, setOpenDate] = useState<string | null>(null);
   const [displayDate, setDisplayDate] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
+  const onMonthChangeRef = useRef(onMonthChange);
+  onMonthChangeRef.current = onMonthChange;
 
   const { state } = useStore();
   const hasEmojis = openDate ? (state.entries[openDate] ?? []).length > 0 : false;
@@ -231,6 +233,7 @@ export default function MonthView({ initialYear, initialMonth, onBack }: Props) 
       const item = viewableItems[0].item;
       setVisibleYear(item.year);
       setVisibleMonth(item.month);
+      onMonthChangeRef.current?.(item.year, item.month);
     }
   }, []);
 

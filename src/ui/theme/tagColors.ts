@@ -9,7 +9,7 @@ const EMOJI_COLOR_MAP: Record<string, string> = {
   "🚴": "#ffcc00", "🏍️": "#ff3300", "🏎️": "#ff0000", "🚕": "#ffdd00",
   "🛵": "#44cc88", "🛴": "#88ff00", "🚌": "#ffaa00", "✈️": "#00aaff",
   "⛵": "#ffffff", "🚶": "#ffcc44", "🏃": "#00ff44", "🛶": "#cc8844",
-  "🚂": "#88aacc", "🚁": "#ff4400",
+  "🚃": "#88aacc", "🚁": "#ff4400",
   // Nature & Outdoors
   "⛰️": "#88aacc", "🌲": "#00aa44", "🏖️": "#ffdd44", "🌊": "#00ddff",
   "☀️": "#ffee00", "🌤️": "#ffdd44", "🌅": "#ff6644", "🌄": "#ff8844", "🎣": "#4488cc",
@@ -43,7 +43,7 @@ const EMOJI_COLOR_MAP: Record<string, string> = {
   // Pets & Animals
   "🐕": "#cc8844", "🐟": "#00aaff", "🦜": "#00ff44",
   // Spiritual
-  "🕯️": "#ffaa44", "🌙": "#aa77ff",
+  "🕯️": "#ffaa44", "🌙": "#aa77ff", "🩸": "#cc0000", "💧": "#44bbff",
   // Education & Growth
   "🌱": "#00ff66",
 };

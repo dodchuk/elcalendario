@@ -59,14 +59,29 @@ function AuraCircle({ colors }: { colors: { color: string; weight: number }[] })
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ year: initYear, month: initMonth, initViewMode, onChangeYear, onChangeMonth }: { year: number; month: number; initViewMode: "year" | "month"; onChangeYear: (y: number) => void; onChangeMonth: (m: number) => void }) {
   const { state } = useStore();
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map(t => [t.id, t])), [state.tags]);
   const today = todayStr();
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [viewMode, setViewMode] = useState<"year" | "month">("month");
-  const [month, setMonth] = useState(now.getMonth());
+  const [year, setYearLocal] = useState(initYear);
+  const [viewMode, setViewMode] = useState<"all" | "year" | "month">(initViewMode);
+  const [month, setMonthLocal] = useState(initMonth);
+
+  useEffect(() => { setYearLocal(initYear); }, [initYear]);
+  useEffect(() => { setMonthLocal(initMonth); }, [initMonth]);
+  useEffect(() => { setViewMode(initViewMode); }, [initViewMode]);
+
+  const setYear = (y: number | ((prev: number) => number)) => {
+    const val = typeof y === "function" ? y(year) : y;
+    setYearLocal(val);
+    onChangeYear(val);
+  };
+  const setMonth = (m: number | ((prev: number) => number)) => {
+    const val = typeof m === "function" ? m(month) : m;
+    setMonthLocal(val);
+    onChangeMonth(val);
+  };
 
   // HUD: today's count
   const todayCount = (state.entries[today] ?? []).length;
@@ -87,7 +102,18 @@ export default function Dashboard() {
 
   // Best period
   const bestPeriod = useMemo(() => {
-    if (viewMode === "year") {
+    if (viewMode === "all") {
+      // Best month across all time
+      const monthCounts: Record<string, number> = {};
+      for (const [date, ids] of Object.entries(state.entries)) {
+        if (ids.length > 0) { const ym = date.slice(0, 7); monthCounts[ym] = (monthCounts[ym] ?? 0) + ids.length; }
+      }
+      const best = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0];
+      if (!best) return { label: "—", count: 0 };
+      const [y, m] = best[0].split("-");
+      const FULL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return { label: `${FULL_MONTHS[parseInt(m) - 1]} ${y}`, count: best[1] };
+    } else if (viewMode === "year") {
       // Best month: most activities
       const months = Array(12).fill(0);
       for (const [date, ids] of Object.entries(state.entries)) {
@@ -128,10 +154,10 @@ export default function Dashboard() {
 
   // Top 5 most used this year
   const top5 = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const counts: Record<string, number> = {};
     for (const [date, ids] of Object.entries(state.entries)) {
-      if (!date.startsWith(prefix)) continue;
+      if (prefix && !date.startsWith(prefix)) continue;
       for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
     }
     return Object.entries(counts)
@@ -144,7 +170,7 @@ export default function Dashboard() {
 
   // Top streaks per emoji in selected period
   const topStreaks = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const results: { id: string; emoji: string; streak: number }[] = [];
     for (const tag of state.tags) {
       const dates = Object.keys(state.entries)
@@ -164,7 +190,7 @@ export default function Dashboard() {
 
   // New emojis this period (first appearance in selected month/year)
   const newEmojis = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const inPeriod = new Set<string>();
     const beforePeriod = new Set<string>();
     for (const [date, ids] of Object.entries(state.entries)) {
@@ -178,10 +204,10 @@ export default function Dashboard() {
 
   // Activity combos (emojis that appear together most often)
   const combos = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const pairCount: Record<string, number> = {};
     for (const [date, ids] of Object.entries(state.entries)) {
-      if (!date.startsWith(prefix) || ids.length < 2) continue;
+      if (prefix && !date.startsWith(prefix) || ids.length < 2) continue;
       for (let i = 0; i < ids.length; i++) {
         for (let j = i + 1; j < ids.length; j++) {
           const key = [ids[i], ids[j]].sort().join("|");
@@ -199,7 +225,7 @@ export default function Dashboard() {
       });
   }, [state.entries, tagMap, year, month, viewMode]);
   const droppedEmojis = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const inPeriod = new Set<string>();
     const beforePeriod = new Set<string>();
     for (const [date, ids] of Object.entries(state.entries)) {
@@ -213,9 +239,11 @@ export default function Dashboard() {
 
   // Replacement patterns (A dropped, B rose comparing to previous period)
   const replacements = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     let prevPrefix: string;
-    if (viewMode === "month") {
+    if (viewMode === "all") {
+      return [];
+    } else if (viewMode === "month") {
       const pm = month === 0 ? 11 : month - 1;
       const py = month === 0 ? year - 1 : year;
       prevPrefix = `${py}-${pad(pm + 1)}`;
@@ -241,11 +269,11 @@ export default function Dashboard() {
 
   // Routine score (how predictable — % of days that match your most common pattern)
   const routineScore = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const patterns: Record<string, number> = {};
     let totalDays = 0;
     for (const [date, ids] of Object.entries(state.entries)) {
-      if (!date.startsWith(prefix) || ids.length === 0) continue;
+      if (prefix && !date.startsWith(prefix) || ids.length === 0) continue;
       const key = [...ids].sort().join(",");
       patterns[key] = (patterns[key] ?? 0) + 1;
       totalDays++;
@@ -257,11 +285,11 @@ export default function Dashboard() {
 
   // Weekend warrior (emojis that appear more on weekends)
   const weekendWarriors = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const weekday: Record<string, number> = {};
     const weekend: Record<string, number> = {};
     for (const [date, ids] of Object.entries(state.entries)) {
-      if (!date.startsWith(prefix)) continue;
+      if (prefix && !date.startsWith(prefix)) continue;
       const dow = new Date(date).getDay();
       const isWeekend = dow === 0 || dow === 6;
       for (const id of ids) {
@@ -291,7 +319,7 @@ export default function Dashboard() {
     const daysLeft = (new Date(year, 1, 29).getMonth() === 1 ? 366 : 365) - dayOfYear;
     const counts: Record<string, number> = {};
     for (const [date, ids] of Object.entries(state.entries)) {
-      if (!date.startsWith(prefix)) continue;
+      if (prefix && !date.startsWith(prefix)) continue;
       for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
     }
     return Object.entries(counts)
@@ -306,10 +334,10 @@ export default function Dashboard() {
 
   // Aura colors (top emoji colors weighted by usage)
   const auraColors = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
     const counts: Record<string, number> = {};
     for (const [date, ids] of Object.entries(state.entries)) {
-      if (!date.startsWith(prefix)) continue;
+      if (prefix && !date.startsWith(prefix)) continue;
       for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
     }
     return Object.entries(counts)
@@ -396,8 +424,8 @@ export default function Dashboard() {
 
   // Habit strength (consistency % × longest streak)
   const habitStrength = useMemo(() => {
-    const prefix = viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
-    const totalDays = viewMode === "month" ? new Date(year, month + 1, 0).getDate() : (year === now.getFullYear() ? Math.floor((now.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1 : 365);
+    const prefix = viewMode === "all" ? "" : viewMode === "month" ? `${year}-${pad(month + 1)}` : `${year}-`;
+    const totalDays = viewMode === "all" ? Math.max(1, Math.floor((now.getTime() - new Date(Math.min(...Object.keys(state.entries).map(d => new Date(d).getTime()), now.getTime())).getTime()) / 86400000) + 1) : viewMode === "month" ? new Date(year, month + 1, 0).getDate() : (year === now.getFullYear() ? Math.floor((now.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1 : 365);
     return state.tags
       .map(tag => {
         const dates = Object.keys(state.entries)
@@ -472,30 +500,10 @@ export default function Dashboard() {
 
   return (
     <ScrollView style={st.wrap} contentContainerStyle={st.content}>
-      {/* HUD Cards - top */}
-      <View style={st.hudRow}>
-        <View style={st.hudCard}>
-          <Text style={st.hudNum}>{todayCount}</Text>
-          <Text style={st.hudLabel}>Tracked Today</Text>
-        </View>
-        <View style={st.hudCard}>
-          <Text style={st.hudNum}>{(() => {
-            const weekStart = new Date(now);
-            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-            let count = 0;
-            for (const [date, ids] of Object.entries(state.entries)) {
-              if (new Date(date) >= weekStart) count += ids.length;
-            }
-            return count;
-          })()}</Text>
-          <Text style={st.hudLabel}>This week</Text>
-        </View>
-      </View>
-
-      {/* Weekly trends */}
-      {trends.length > 0 && (
+      {/* Weekly trends section with HUD */}
       <View style={st.section}>
-        <Text style={st.sectionTitle}>Weekly trends</Text>
+        <Text style={st.sectionTitle}>Weekly Trends</Text>
+        {trends.length > 0 &&
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {trends.map(t => {
             const color = t.dir === "up" ? "#00ff88" : t.dir === "down" ? "#ff4466" : theme.fgMuted;
@@ -511,35 +519,44 @@ export default function Dashboard() {
               </View>
             );
           })}
-        </View>
-      </View>
-      )}
-
-      {/* Energy ball with legend */}
-      {(
-      <View style={st.section}>
-        <Text style={st.sectionTitle}>{viewMode === "month" ? (year === now.getFullYear() && month === now.getMonth() ? "This month" : `${MONTHS[month]} ${year}`) : (year === now.getFullYear() ? "This year" : `${year}`)}</Text>
-        <View style={st.ringsRow}>
-          <View style={st.ringsLeft}>
-            {top5.slice(0, 3).map((item, i) => (
-              <View key={item.id} style={st.ringLabel}>
-                <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i) }]} />
-                <Text style={st.ringLabelTxt}>{item.emoji} {item.count}</Text>
-              </View>
-            ))}
+        </View>}
+        {year === now.getFullYear() && month === now.getMonth() && (
+        <View style={st.hudRow}>
+          <View style={st.hudCard}>
+            <Text style={st.hudNum}>{todayCount}</Text>
+            <Text style={st.hudLabel}>Tracked Today</Text>
           </View>
-          <AuraCircle colors={auraColors.length > 0 ? auraColors : []} />
-          <View style={st.ringsRight}>
-            {top5.slice(3, 5).map((item, i) => (
-              <View key={item.id} style={st.ringLabel}>
-                <Text style={st.ringLabelTxt}>{item.count} {item.emoji}</Text>
-                <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i + 3) }]} />
-              </View>
-            ))}
+          <View style={st.hudCard}>
+            <Text style={st.hudNum}>{(() => {
+              const weekStart = new Date(now);
+              weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+              let count = 0;
+              for (const [date, ids] of Object.entries(state.entries)) {
+                if (new Date(date) >= weekStart) count += ids.length;
+              }
+              return count;
+            })()}</Text>
+            <Text style={st.hudLabel}>Tracked This Week</Text>
+          </View>
+          <View style={st.hudCard}>
+            <Text style={st.hudNum}>{(() => {
+              const weekStart = new Date(now);
+              weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+              const counts: Record<string, number> = {};
+              for (const [date, ids] of Object.entries(state.entries)) {
+                if (new Date(date) >= weekStart) for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
+              }
+              const top = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+              if (top.length === 0) return "—";
+              const maxCount = top[0][1];
+              const tied = top.filter(([, c]) => c === maxCount);
+              return `${tied.map(([id]) => tagMap[id]?.emoji ?? "").join("")} ${maxCount}`;
+            })()}</Text>
+            <Text style={st.hudLabel}>Top Emoji</Text>
           </View>
         </View>
+        )}
       </View>
-      )}
 
       {/* View toggle + navigation */}
       <View style={st.navRow}>
@@ -550,8 +567,11 @@ export default function Dashboard() {
           <Pressable onPress={() => setViewMode("year")} style={[st.toggleBtn, viewMode === "year" && st.toggleActive]}>
             <Text style={[st.toggleTxt, viewMode === "year" && st.toggleTxtActive]}>Year</Text>
           </Pressable>
+          <Pressable onPress={() => setViewMode("all")} style={[st.toggleBtn, viewMode === "all" && st.toggleActive]}>
+            <Text style={[st.toggleTxt, viewMode === "all" && st.toggleTxtActive]}>All Time</Text>
+          </Pressable>
         </View>
-        <View style={st.yearRow}>
+        <View style={[st.yearRow, viewMode === "all" && { opacity: 0, pointerEvents: "none" }]}>
           <Pressable onPress={() => {
             if (viewMode === "month") {
               if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1);
@@ -576,20 +596,48 @@ export default function Dashboard() {
         </View>
       </View>
 
+      {/* Energy ball with legend */}
+      {(
+      <View style={[st.section, { height: 300 }]}>
+        <Text style={st.sectionTitle}>{viewMode === "all" ? "All Time" : viewMode === "month" ? (year === now.getFullYear() && month === now.getMonth() ? "This Month" : `${MONTHS[month]} ${year}`) : (year === now.getFullYear() ? "This Year" : `${year}`)}</Text>
+        <View style={st.ringsRow}>
+          <View style={st.ringsLeft}>
+            {top5.slice(0, 3).map((item, i) => (
+              <View key={item.id} style={st.ringLabel}>
+                <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i) }]} />
+                <Text style={st.ringLabelTxt}>{item.emoji} {item.count}</Text>
+              </View>
+            ))}
+          </View>
+          <AuraCircle colors={auraColors.length > 0 ? auraColors : []} />
+          <View style={st.ringsRight}>
+            {top5.slice(3, 5).map((item, i) => (
+              <View key={item.id} style={st.ringLabel}>
+                <Text style={st.ringLabelTxt}>{item.count} {item.emoji}</Text>
+                <View style={[st.ringDot, { backgroundColor: getEmojiGlowColor(item.emoji, i + 3) }]} />
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+      )}
+
       {/* Heatmap */}
-      <View style={[st.section, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)", paddingVertical: 16 }]}>
+      {(viewMode === "all" ? [...new Set(Object.keys(state.entries).map(d => parseInt(d.slice(0, 4))))].sort((a, b) => b - a).concat(Object.keys(state.entries).length === 0 ? [now.getFullYear()] : []) : [year]).map(heatYear => (
+      <View key={heatYear} style={[st.section, { paddingBottom: 12, marginBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.06)" }]}>
+        <Text style={[st.sectionTitle, { paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.06)", marginBottom: 12 }]}>{heatYear}</Text>
         <View style={st.heatGrid}>
           {MONTHS.map((m, mi) => {
-            const firstDay = new Date(year, mi, 1).getDay();
-            const daysInMonth = new Date(year, mi + 1, 0).getDate();
+            const firstDay = new Date(heatYear, mi, 1).getDay();
+            const daysInMonth = new Date(heatYear, mi + 1, 0).getDate();
             const cells: { count: number }[] = [];
             for (let i = 0; i < firstDay; i++) cells.push({ count: -1 });
             for (let d = 1; d <= daysInMonth; d++) {
-              const ds = `${year}-${pad(mi + 1)}-${pad(d)}`;
+              const ds = `${heatYear}-${pad(mi + 1)}-${pad(d)}`;
               if (viewMode === "month" && mi !== month) {
                 cells.push({ count: -2 });
               } else {
-                const isAfterToday = new Date(year, mi, d) > now;
+                const isAfterToday = new Date(heatYear, mi, d) > now;
                 cells.push({ count: isAfterToday ? -3 : (state.entries[ds] ?? []).length });
               }
             }
@@ -622,13 +670,17 @@ export default function Dashboard() {
           <Text style={st.legendTxt}>More</Text>
         </View>
       </View>
+      ))}
 
       {/* Rings - Apple Watch style (year view) */}
       {/* HUD Cards - after heatmap */}
-      {bestPeriod.count > 0 && (
+      {bestPeriod.count >= 0 && (
       <View style={[st.hudRow, { paddingBottom: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)", marginBottom: 20 }]}>
         <View style={st.hudCard}>
-          <Text style={st.hudNum}>{viewMode === "year" ? (() => {
+          <Text style={st.hudNum}>{viewMode === "all" ? (() => {
+            const activeDays = Object.keys(state.entries).filter(d => state.entries[d].length > 0).length;
+            return <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{activeDays}</Text></View>;
+          })() : viewMode === "year" ? (() => {
             const daysInYear = new Date(year, 1, 29).getMonth() === 1 ? 366 : 365;
             const activeDays = Object.keys(state.entries).filter(d => d.startsWith(`${year}-`) && state.entries[d].length > 0).length;
             return <View style={{ flexDirection: "row", alignItems: "baseline" }}><Text style={{ fontSize: 22, fontWeight: "700", color: "#fff" }}>{activeDays}</Text><Text style={{ fontSize: 11, color: theme.fgMuted, marginHorizontal: 6 }}>of</Text><Text style={{ fontSize: 22, fontWeight: "700", color: "rgba(255,255,255,0.5)" }}>{daysInYear}</Text></View>;
@@ -641,9 +693,9 @@ export default function Dashboard() {
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {viewMode === "month" && <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#ff3b30", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>{bestPeriod.label.split(" ")[0]}</Text></View>}
-            <Text style={st.hudNum}>{viewMode === "year" ? bestPeriod.label : bestPeriod.label.split(" ").slice(1).join(" ")}</Text>
+            <Text style={st.hudNum}>{viewMode === "month" ? bestPeriod.label.split(" ").slice(1).join(" ") : bestPeriod.label}</Text>
           </View>
-          <Text style={st.hudLabel}>Peak {viewMode === "year" ? "month" : "day"}</Text>
+          <Text style={st.hudLabel}>Peak {viewMode === "all" ? "month" : viewMode === "year" ? "month" : "day"}</Text>
         </View>
       </View>
       )}
@@ -765,7 +817,7 @@ export default function Dashboard() {
       {/* New this period */}
       {newEmojis.length > 0 && (
       <View style={st.section}>
-        <Text style={st.sectionTitle}>New {viewMode === "month" ? `in ${MONTHS[month]}` : `in ${year}`}</Text>
+        <Text style={st.sectionTitle}>New {viewMode === "all" ? "emojis" : viewMode === "month" ? `in ${MONTHS[month]}` : `in ${year}`}</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
           {newEmojis.map((e, i) => {
             const color = getEmojiGlowColor(e, i);
@@ -809,7 +861,7 @@ export default function Dashboard() {
       {/* === FUTURE === */}
 
       {/* By end of year */}
-      {viewMode === "year" && projections.length > 0 && year === now.getFullYear() && (
+      {(viewMode === "year" || viewMode === "all") && projections.length > 0 && year === now.getFullYear() && (
       <View style={st.section}>
         <Text style={st.sectionTitle}>By end of year</Text>
         {projections.map((p, i) => {
@@ -846,7 +898,7 @@ export default function Dashboard() {
 const st = StyleSheet.create({
   wrap: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  hudRow: { flexDirection: "row", gap: 8, marginBottom: 20 },
+  hudRow: { flexDirection: "row", gap: 8, marginTop: 10 },
   hudCard: {
     flex: 1, backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 12, paddingVertical: 14, alignItems: "center",
@@ -855,14 +907,14 @@ const st = StyleSheet.create({
   hudLabel: { fontSize: 11, color: theme.fgMuted },
   yearRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   navBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingVertical: 12, height: 52, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.06)", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.06)" },
   toggleRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8, padding: 2 },
   toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   toggleActive: { backgroundColor: "rgba(255,255,255,0.12)" },
   toggleTxt: { fontSize: 12, color: theme.fgMuted, fontWeight: "500" },
   toggleTxtActive: { color: "#fff" },
-  yearTxt: { fontSize: 15, fontWeight: "600", color: theme.fg },
-  section: { marginBottom: 20, paddingBottom: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)" },
+  yearTxt: { fontSize: 15, fontWeight: "600", color: theme.fg, minWidth: 80, textAlign: "center" },
+  section: { marginBottom: 12 },
   sectionTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted, marginBottom: 12 },
   heatGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   heatMonth: { width: "23%", marginBottom: 10 },
@@ -874,9 +926,9 @@ const st = StyleSheet.create({
   empty: { color: theme.fgMuted, fontSize: 13 },
   auraWrap: { width: 200, height: 200, alignSelf: "center", alignItems: "center", justifyContent: "center", marginVertical: 16 },
   ringsWrap: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 24 },
-  ringsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  ringsLeft: { gap: 8, flex: 1 },
-  ringsRight: { gap: 8, flex: 1, alignItems: "flex-end" },
+  ringsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 24, height: 260 },
+  ringsLeft: { gap: 8, flex: 1, justifyContent: "center" },
+  ringsRight: { gap: 8, flex: 1, alignItems: "flex-end", justifyContent: "center" },
   ringsCenter: { width: 110, height: 110, alignItems: "center", justifyContent: "center" },
   ring: { position: "absolute", alignItems: "center", justifyContent: "center" },
   ringFill: { position: "absolute" },

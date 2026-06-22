@@ -11,7 +11,7 @@ function daysIn(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); 
 function startOff(y: number, m: number, firstDay: number) { return (new Date(y, m, 1).getDay() - firstDay + 7) % 7; }
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 
-type Props = { onSelectMonth: (year: number, month: number) => void };
+type Props = { onSelectMonth: (year: number, month: number) => void; initialYear?: number; onYearChange?: (year: number) => void };
 
 function MiniMonth({ year, month, onPress }: { year: number; month: number; onPress: () => void }) {
   const { state } = useStore();
@@ -42,15 +42,22 @@ function MiniMonth({ year, month, onPress }: { year: number; month: number; onPr
   );
 }
 
-export default function YearView({ onSelectMonth }: Props) {
-  const [year, setYear] = useState(new Date().getFullYear());
+export default function YearView({ onSelectMonth, initialYear, onYearChange }: Props) {
+  const [year, setYearLocal] = useState(initialYear ?? new Date().getFullYear());
+  const setYear = (fn: (y: number) => number) => {
+    setYearLocal(prev => {
+      const next = fn(prev);
+      onYearChange?.(next);
+      return next;
+    });
+  };
   const now = new Date();
 
   return (
     <View style={st.container}>
       <View style={st.header}>
         <Pressable onPress={() => setYear(y => y - 1)} style={st.navBtn}>
-          <Ionicons name="chevron-back" size={20} color={theme.fgMuted} />
+          <Ionicons name="chevron-back" size={14} color={theme.fg} />
         </Pressable>
         <Text style={st.yearTitle}>{year}</Text>
         <Pressable
@@ -58,7 +65,7 @@ export default function YearView({ onSelectMonth }: Props) {
           style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]}
           disabled={year >= now.getFullYear()}
         >
-          <Ionicons name="chevron-forward" size={20} color={year >= now.getFullYear() ? theme.fgSubtle : theme.fgMuted} />
+          <Ionicons name="chevron-forward" size={14} color={theme.fg} />
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={st.grid}>
@@ -75,12 +82,12 @@ const st = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
+    justifyContent: "center",
+    gap: 10,
     paddingVertical: 12,
   },
-  yearTitle: { fontSize: 22, fontWeight: "800", color: theme.fg, letterSpacing: -0.5 },
-  navBtn: { padding: 8 },
+  yearTitle: { fontSize: 15, fontWeight: "600", color: theme.fg, width: 50, textAlign: "center" },
+  navBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
   navDisabled: { opacity: 0.3 },
   grid: {
     flexDirection: "row",
