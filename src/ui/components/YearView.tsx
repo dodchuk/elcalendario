@@ -86,7 +86,7 @@ const st = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
   },
-  iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: theme.surfaceGlass, borderWidth: 0.5, borderColor: theme.glassBorder, alignItems: "center", justifyContent: "center", paddingRight: 1 },
+  iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
   yearTitle: { fontSize: 15, fontWeight: "600", color: theme.fg, width: 50, textAlign: "center" },
   navBtn: {},
   navDisabled: { opacity: 0.3 },
