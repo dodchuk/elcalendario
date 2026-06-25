@@ -156,7 +156,7 @@ export default function TagManager() {
   }, [scrollY, containerH, containerW]);
 
   return (
-    <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.wrap} onLayout={onLayout}>
+    <View style={st.wrap} onLayout={onLayout}>
       <View style={st.header}>
         <Text style={st.title}>Emojis</Text>
         <View style={st.badge}>
@@ -184,12 +184,12 @@ export default function TagManager() {
           ))}
         </View>
       </Animated.ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const st = StyleSheet.create({
-  wrap: { flex: 1 },
+  wrap: { flex: 1, backgroundColor: "#000" },
   header: {
     flexDirection: "row", alignItems: "center", gap: 8,
     paddingHorizontal: 16, paddingBottom: 12, paddingTop: 8,

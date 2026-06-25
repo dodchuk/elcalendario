@@ -605,7 +605,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
       </View>
       )}
       {(
-      <View style={[st.section, { paddingTop: 16, paddingBottom: 16 }]}>
+      <View style={st.section}>
         <Text style={st.sectionTitle}>{"Routine Score".split("").map((c, i) => <Text key={i} style={{ color: (routineScore ?? 0) === 0 ? theme.fgMuted : `hsl(${i * 28}, 80%, 65%)` }}>{c}</Text>)}</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <Text style={{ fontSize: 28, fontWeight: "700" }}>{`${routineScore ?? 0}%`.split("").map((c, i, arr) => {
@@ -691,7 +691,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
       {/* Combos */}
       {/* Weekend warrior */}
       {weekendWarriors.length > 0 && (
-      <View style={[st.section, { paddingTop: 16, paddingBottom: 16 }]}>
+      <View style={st.section}>
         <Text style={st.sectionTitle}>Weekend Warrior</Text>
         {weekendWarriors.map((w, i) => (
           <View key={w.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 }}>
@@ -895,7 +895,7 @@ const st = StyleSheet.create({
   hudLabel: { fontSize: 11, color: theme.fgMuted },
   yearRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   navBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingVertical: 12, height: 52, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.06)", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.06)" },
+  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingVertical: 12, height: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.06)" },
   toggleRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8, padding: 2 },
   toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   toggleActive: { backgroundColor: "rgba(255,255,255,0.12)" },

@@ -6,13 +6,13 @@ import { theme } from "../theme/colors";
 type Props = { onBack: () => void };
 
 export default function SignUpScreen({ onBack }: Props) {
-  const { signIn } = useAuth();
+  const { setNickname } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleGoogle = () => signIn("user@gmail.com");
-  const handleSubmit = () => { if (email) signIn(email); };
+  const handleGoogle = () => setNickname("User");
+  const handleSubmit = () => { if (name) setNickname(name); };
 
   return (
     <View style={st.container}>

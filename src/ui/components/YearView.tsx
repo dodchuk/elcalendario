@@ -57,7 +57,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
     <View style={st.container}>
       <View style={st.header}>
         <Pressable onPress={() => setYear(y => y - 1)} style={st.navBtn}>
-          <Ionicons name="chevron-back" size={14} color={theme.fg} />
+          <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
         </Pressable>
         <Text style={st.yearTitle}>{year}</Text>
         <Pressable
@@ -65,7 +65,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
           style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]}
           disabled={year >= now.getFullYear()}
         >
-          <Ionicons name="chevron-forward" size={14} color={theme.fg} />
+          <View style={st.iconCircle}><Ionicons name="chevron-forward" size={14} color={theme.fg} /></View>
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={st.grid}>
@@ -78,7 +78,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#000" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -86,8 +86,9 @@ const st = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
   },
+  iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: theme.surfaceGlass, borderWidth: 0.5, borderColor: theme.glassBorder, alignItems: "center", justifyContent: "center", paddingRight: 1 },
   yearTitle: { fontSize: 15, fontWeight: "600", color: theme.fg, width: 50, textAlign: "center" },
-  navBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  navBtn: {},
   navDisabled: { opacity: 0.3 },
   grid: {
     flexDirection: "row",

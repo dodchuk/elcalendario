@@ -50,7 +50,7 @@ function Main() {
       <ScreenProgressBar active={loading} />
       {/* Header */}
       {tab !== "profile" && (
-      <View style={[st.appHeader, tab === "emojis" && { backgroundColor: "#0a0a0a" }]}>
+      <View style={[st.appHeader, tab === "emojis" && { backgroundColor: "#000" }]}>
         <View style={st.logoSkeleton} />
         <Pressable onPress={() => { setPrevTab(tab); setTab("profile"); }} style={st.profileBtn}>
           <Ionicons name="person-outline" size={18} color={theme.fg} />
@@ -294,16 +294,19 @@ const st = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 10,
+    backgroundColor: "#000",
   },
   logoSkeleton: {
     width: 80,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: theme.surfaceGlass,
   },
   profileBtn: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: theme.surfaceGlass,
+    borderWidth: 0.5,
+    borderColor: theme.glassBorder,
     alignItems: "center", justifyContent: "center",
   },
   tabBar: {
@@ -313,7 +316,7 @@ const st = StyleSheet.create({
     paddingBottom: 20,
     paddingTop: 8,
     paddingHorizontal: 24,
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "#000",
   },
   tab: {
     alignItems: "center",

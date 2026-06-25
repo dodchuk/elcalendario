@@ -3,7 +3,6 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../application/AuthContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSettings } from "../../application/SettingsContext";
 import { theme } from "../theme/colors";
 
@@ -99,13 +98,13 @@ function ChangePasswordScreen({ onBack }: { onBack: () => void }) {
 }
 
 export default function ProfileScreen({ onClose }: Props) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, setNickname: saveNick } = useAuth();
   const { settings, setFirstDay } = useSettings();
-  const [nickname, setNickname] = useState(user?.name ?? "");
+  const [nickname, setNickname] = useState(user?.nickname ?? "");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("nickname").then(v => { if (v) setNickname(v); });
+    if (user?.nickname) setNickname(user.nickname);
   }, []);
   const [showPwChange, setShowPwChange] = useState(false);
   const [showPwReset, setShowPwReset] = useState(false);
@@ -114,9 +113,8 @@ export default function ProfileScreen({ onClose }: Props) {
   const handleNicknameChange = useCallback((v: string) => {
     setNickname(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      await AsyncStorage.setItem("nickname", v);
-      // TODO: await api.updateNickname(v);
+    debounceRef.current = setTimeout(() => {
+      saveNick(v);
       setSaved(true);
       setTimeout(() => setSaved(false), 1500);
     }, 600);
@@ -140,7 +138,7 @@ export default function ProfileScreen({ onClose }: Props) {
             <Text style={st.avatarTxt}>{nickname ? nickname[0].toUpperCase() : "?"}</Text>
           </View>
           <Text style={st.name}>{nickname || "User"}</Text>
-          <Text style={st.meta}>{user?.email}</Text>
+          <Text style={st.meta}>{user?.deviceId?.slice(0, 8)}</Text>
         </View>
 
         <View style={st.section}>
@@ -187,7 +185,7 @@ export default function ProfileScreen({ onClose }: Props) {
               <Text style={{ fontSize: 20 }}>G</Text>
               <View>
                 <Text style={st.linkTxt}>Google</Text>
-                <Text style={{ fontSize: 12, color: theme.fgMuted }}>{user?.email}</Text>
+                <Text style={{ fontSize: 12, color: theme.fgMuted }}>{user?.deviceId?.slice(0, 8)}</Text>
               </View>
             </View>
             <Pressable style={{ backgroundColor: "rgba(255,59,48,0.1)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>

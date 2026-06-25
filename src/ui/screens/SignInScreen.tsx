@@ -7,12 +7,12 @@ import { theme } from "../theme/colors";
 type Props = { onBack: () => void; onFindAccount: () => void };
 
 export default function SignInScreen({ onBack, onFindAccount }: Props) {
-  const { signIn } = useAuth();
+  const { setNickname } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleGoogle = () => signIn("user@gmail.com");
-  const handleSubmit = () => { if (email) signIn(email); };
+  const handleGoogle = () => setNickname("User");
+  const handleSubmit = () => { if (email) setNickname(email.split("@")[0]); };
 
   return (
     <LinearGradient colors={["#0a0a0a", "#1a1a1a", "#0a0a0a"]} style={st.container}>
