@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode, type Dispatch } from "react";
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef, type ReactNode, type Dispatch } from "react";
 import type { CalendarState, Action } from "../domain/vo/types";
 import { calendarReducer, initialState } from "../domain/calendarReducer";
 import { loadState } from "../infrastructure/calendarRepository";
@@ -14,31 +14,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      // Try loading from SQLite first
       const dbState = await loadStateFromDB();
       if (dbState.tags.length || Object.keys(dbState.entries).length) {
         dispatch({ type: "LOAD", state: dbState });
+        didLoad.current = true;
         return;
       }
-      // Migrate from AsyncStorage if exists
       const legacy = await loadState();
       if (legacy) {
         await importState(legacy);
         dispatch({ type: "LOAD", state: legacy });
       }
+      didLoad.current = true;
     })();
   }, []);
 
-  // Persist actions to SQLite
+  // Persist full state after every change
+  const didLoad = useRef(false);
+  useEffect(() => {
+    if (!didLoad.current) return;
+    importState(state);
+  }, [state]);
+
+  // Persist actions to SQLite (native) — on web importState handles it
   const dispatchWithPersist = useCallback((action: Action) => {
     dispatch(action);
-    switch (action.type) {
-      case "ADD_TAG": saveTag(action.tag); break;
-      case "DEL_TAG": deleteTag(action.id); break;
-      case "TOGGLE_EMOJI": toggleEntry(action.date, action.tagId); break;
-      case "SET_TIME_SLOT": setTimeSlot(action.date, action.tagId, action.time); break;
-      case "DEL_TIME_SLOT": deleteTimeSlot(action.date, action.tagId, action.time); break;
-    }
   }, []);
 
   return <Ctx.Provider value={{ state, dispatch: dispatchWithPersist }}>{children}</Ctx.Provider>;
