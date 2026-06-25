@@ -127,7 +127,7 @@ export async function getProfile(key: string): Promise<string | null> {
 }
 
 export async function importState(state: CalendarState) {
-  if (isWeb) { _state = state; await webSave(); return; }
+  if (isWeb) { _state = JSON.parse(JSON.stringify(state)); await webSave(); return; }
   const d = await getDB();
   await d.execAsync("DELETE FROM tags; DELETE FROM entries; DELETE FROM time_entries;");
   for (const tag of state.tags) await d.runAsync("INSERT INTO tags (id, emoji) VALUES (?, ?)", tag.id, tag.emoji);
