@@ -20,7 +20,7 @@ export const theme = {
   borderMuted: "rgba(255,255,255,0.06)",
   borderLight: "rgba(255,255,255,0.20)",
   // Semantic
-  danger: "#ff3b30",
+  danger: "#39ff14",
   success: "#30d158",
   // Gradients (glass-inspired)
   gradientDark: ["#000000", "#0a0a0a"] as const,

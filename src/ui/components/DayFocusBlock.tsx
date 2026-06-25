@@ -100,9 +100,9 @@ const st = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: "#ff3b30",
+    backgroundColor: theme.danger,
     borderWidth: 1,
-    borderColor: "#ff3b30",
+    borderColor: theme.danger,
   },
   monthLabel: {
     fontSize: 14,

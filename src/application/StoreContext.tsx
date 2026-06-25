@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, type ReactNode, type Dispatch } from "react";
+import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode, type Dispatch } from "react";
 import type { CalendarState, Action } from "../domain/vo/types";
 import { calendarReducer, initialState } from "../domain/calendarReducer";
 import { loadState } from "../infrastructure/calendarRepository";
@@ -30,7 +30,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Persist actions to SQLite
-  const dispatchWithPersist = (action: Action) => {
+  const dispatchWithPersist = useCallback((action: Action) => {
     dispatch(action);
     switch (action.type) {
       case "ADD_TAG": saveTag(action.tag); break;
@@ -39,7 +39,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       case "SET_TIME_SLOT": setTimeSlot(action.date, action.tagId, action.time); break;
       case "DEL_TIME_SLOT": deleteTimeSlot(action.date, action.tagId, action.time); break;
     }
-  };
+  }, []);
 
   return <Ctx.Provider value={{ state, dispatch: dispatchWithPersist }}>{children}</Ctx.Provider>;
 }

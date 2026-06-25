@@ -34,14 +34,17 @@ export default function DayTimeline({ date, filter }: Props) {
   const tagMap = useMemo(() => Object.fromEntries(state.tags.map((t) => [t.id, t])), [state.tags]);
   const allActiveIds = useMemo(() => (state.entries[date] ?? []).filter((id) => tagMap[id]), [state.entries, date, tagMap]);
   const activeIds = useMemo(() => filter.length ? allActiveIds.filter((id) => filter.includes(id)) : allActiveIds, [allActiveIds, filter]);
-  const timeSlots = useMemo(() => {
-    const slots = state.timeEntries?.[date] ?? [];
-    return slots.filter((sl) => activeIds.includes(sl.tagId));
-  }, [state.timeEntries, date, activeIds]);
-  const slotMap = useMemo(() => { const m: Record<string, string> = {}; for (const sl of timeSlots) m[sl.time] = sl.tagId; return m; }, [timeSlots]);
-  const tagSlot = useMemo(() => { const m: Record<string, string> = {}; for (const sl of timeSlots) m[sl.tagId] = sl.time; return m; }, [timeSlots]);
+  const timeSlots = (state.timeEntries?.[date] ?? []).filter((sl) => activeIds.includes(sl.tagId));
+  const slotMap: Record<string, string> = {};
+  for (const sl of timeSlots) slotMap[sl.time] = sl.tagId;
+  const tagSlot: Record<string, string> = {};
+  for (const sl of timeSlots) tagSlot[sl.tagId] = sl.time;
 
   const [selected, setSelected] = useState<string | null>(null);
+  // Auto-select single unassigned emoji for assignment (but don't show as selected)
+  const unassigned = activeIds.filter(id => !tagSlot[id]);
+  const effectiveSelected = selected ?? (unassigned.length === 1 ? unassigned[0] : null);
+  const visualSelected = selected; // Only show selection highlight for manual selection
   const [containerW, setContainerW] = useState(300);
   const scrollRef = useRef<Animated.ScrollView>(null);
   const viewH = useSharedValue(320);
@@ -60,31 +63,58 @@ export default function DayTimeline({ date, filter }: Props) {
   const bubCount = useSharedValue(0);
   const cw = useSharedValue(containerW);
 
-  // Init bodies when activeIds change
+  // Init bodies when activeIds change — preserve existing, add new
   useEffect(() => {
     const w = containerW;
+    const h = 200; // visible float area height
     if (n === 0) { bubCount.value = 0; return; }
-    xs.value = activeIds.map(() => 60 + Math.random() * Math.max(w - 120, 40));
-    ys.value = activeIds.map((_, i) => 40 + i * 50);
-    vxs.value = activeIds.map(() => (Math.random() - 0.5) * 0.5);
-    vys.value = activeIds.map(() => (Math.random() - 0.5) * 0.5);
+    const prevN = bubCount.value;
+    if (prevN === 0 || n < prevN) {
+      xs.value = activeIds.map(() => 60 + Math.random() * Math.max(w - 120, 40));
+      ys.value = activeIds.map((_, i) => 30 + (i % 4) * 45);
+      vxs.value = activeIds.map(() => (Math.random() - 0.5) * 0.5);
+      vys.value = activeIds.map(() => (Math.random() - 0.5) * 0.5);
+    } else if (n > prevN) {
+      const diff = n - prevN;
+      const curXs = xs.value.slice();
+      const curYs = ys.value.slice();
+      const curVxs = vxs.value.slice();
+      const curVys = vys.value.slice();
+      for (let i = 0; i < diff; i++) {
+        curXs.push(60 + Math.random() * Math.max(w - 120, 40));
+        curYs.push(30 + ((prevN + i) % 4) * 45);
+        curVxs.push((Math.random() - 0.5) * 0.5);
+        curVys.push((Math.random() - 0.5) * 0.5);
+      }
+      xs.value = curXs;
+      ys.value = curYs;
+      vxs.value = curVxs;
+      vys.value = curVys;
+    }
     bubCount.value = n;
   }, [n, date]);
 
-  // Update targets when assignments change
+  // Update targets when assignments change — snap assigned bubbles to position
   useEffect(() => {
     cw.value = containerW;
     const tx: number[] = [], ty: number[] = [], af: number[] = [];
-    activeIds.forEach((id) => {
+    const curXs = xs.value.slice();
+    const curYs = ys.value.slice();
+    activeIds.forEach((id, i) => {
       const time = tagSlot[id];
       if (time) {
+        const targetY = SLOTS.indexOf(time) * ROW_H + ROW_H / 2;
         tx.push(80);
-        ty.push(SLOTS.indexOf(time) * ROW_H + ROW_H / 2);
+        ty.push(targetY);
         af.push(1);
+        // Snap position immediately
+        if (curXs[i] !== undefined) { curXs[i] = 80; curYs[i] = targetY; }
       } else {
         tx.push(0); ty.push(0); af.push(0);
       }
     });
+    xs.value = curXs;
+    ys.value = curYs;
     targetXs.value = tx;
     targetYs.value = ty;
     assignedFlags.value = af;
@@ -158,22 +188,17 @@ export default function DayTimeline({ date, filter }: Props) {
   });
 
   const assignToSlot = (time: string) => {
-    if (!selected) return;
-    // Convert bubble Y from overlay-space to content-space before assigning
-    const idx = activeIds.indexOf(selected);
-    if (idx >= 0) {
-      const newYs = ys.value.slice();
-      newYs[idx] = newYs[idx] + scrollOffset.current;
-      ys.value = newYs;
-    }
+    const sel = effectiveSelected ?? (activeIds.length === 1 ? activeIds[0] : null);
+    if (!sel) return;
     const cur = slotMap[time];
-    if (cur === selected) {
-      dispatch({ type: "DEL_TIME_SLOT", date, tagId: selected, time });
+    if (cur === sel) {
+      dispatch({ type: "DEL_TIME_SLOT", date, tagId: sel, time });
     } else {
       if (cur) dispatch({ type: "DEL_TIME_SLOT", date, tagId: cur, time });
-      const oldTime = tagSlot[selected];
-      if (oldTime) dispatch({ type: "DEL_TIME_SLOT", date, tagId: selected, time: oldTime });
-      dispatch({ type: "SET_TIME_SLOT", date, tagId: selected, time });
+      // Remove ALL existing time slots for this emoji
+      const existing = timeSlots.filter(sl => sl.tagId === sel);
+      for (const sl of existing) dispatch({ type: "DEL_TIME_SLOT", date, tagId: sel, time: sl.time });
+      dispatch({ type: "SET_TIME_SLOT", date, tagId: sel, time });
     }
     setSelected(null);
   };
@@ -181,13 +206,6 @@ export default function DayTimeline({ date, filter }: Props) {
   const handleBubblePress = (id: string) => {
     const time = tagSlot[id];
     if (time) {
-      // Convert Y from content-space to overlay-space before unassigning
-      const idx = activeIds.indexOf(id);
-      if (idx >= 0) {
-        const newYs = ys.value.slice();
-        newYs[idx] = newYs[idx] - scrollOffset.current;
-        ys.value = newYs;
-      }
       dispatch({ type: "DEL_TIME_SLOT", date, tagId: id, time });
       setSelected(null);
     } else {
@@ -213,7 +231,7 @@ export default function DayTimeline({ date, filter }: Props) {
               key={id} index={i} xs={xs} ys={ys}
               emoji={tagMap[id].emoji}
               assigned={true}
-              selected={selected === id}
+              selected={visualSelected === id}
               color={getEmojiGlowColor(tagMap[id]?.emoji ?? "", state.tags.findIndex(t => t.id === id))}
               onPress={() => handleBubblePress(id)}
             />
@@ -241,7 +259,7 @@ export default function DayTimeline({ date, filter }: Props) {
             key={id} index={i} xs={xs} ys={ys}
             emoji={tagMap[id].emoji}
             assigned={false}
-            selected={selected === id}
+            selected={visualSelected === id}
             onPress={() => handleBubblePress(id)}
           />
         ) : null)}
@@ -254,7 +272,8 @@ const st = StyleSheet.create({
   wrap: {
     backgroundColor: "#0a0a0a",
     borderWidth: 1, borderColor: theme.border, borderRadius: 12,
-    marginTop: 0, overflow: "hidden", maxHeight: 254,
+    marginTop: 0, overflow: "hidden",
+    flex: 1,
   },
   scroll: { flex: 1 },
   bubLayer: {

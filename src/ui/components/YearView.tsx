@@ -58,11 +58,11 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
       <View style={st.header}>
         <Pressable onPress={() => setYear(y => y - 1)} style={[st.navBtn, { zIndex: 10 }]}>
           <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
-          <Text style={[st.yearTitle, year - 1 === now.getFullYear() && { color: "#ff3b30" }]}>{year - 1}</Text>
+          <Text style={[st.yearTitle, year - 1 === now.getFullYear() && { color: theme.danger }]}>{year - 1}</Text>
         </Pressable>
         <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
           <View style={[st.yearBadge, year === now.getFullYear() && st.yearBadgeCurrent]}>
-            <Text style={[st.headerCenter, year === now.getFullYear() && { color: "#ff3b30" }]}>{year}</Text>
+            <Text style={[st.headerCenter, year === now.getFullYear() && { color: theme.danger }]}>{year}</Text>
           </View>
         </View>
         <Pressable
@@ -70,7 +70,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
           style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]}
           disabled={year >= now.getFullYear()}
         >
-          <Text style={[st.yearTitle, year + 1 === now.getFullYear() && { color: "#ff3b30" }]}>{year + 1}</Text>
+          <Text style={[st.yearTitle, year + 1 === now.getFullYear() && { color: theme.danger }]}>{year + 1}</Text>
           <View style={st.iconCircle}><Ionicons name="chevron-forward" size={14} color={theme.fg} /></View>
         </Pressable>
       </View>
@@ -96,7 +96,7 @@ const st = StyleSheet.create({
   yearTitle: { fontSize: 16, fontWeight: "600", color: theme.fg },
   headerCenter: { fontSize: 17, fontWeight: "700", color: theme.fg },
   yearBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
-  yearBadgeCurrent: { borderColor: "#ff3b30" },
+  yearBadgeCurrent: { borderColor: theme.danger },
   navBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   navDisabled: { opacity: 0.3 },
   grid: {
@@ -112,7 +112,7 @@ const st = StyleSheet.create({
     padding: 10,
   },
   monthLabel: { fontSize: 13, fontWeight: "700", color: theme.fgMuted, marginBottom: 6 },
-  monthLabelCurrent: { color: "#ff3b30" },
+  monthLabelCurrent: { color: theme.danger },
   miniGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

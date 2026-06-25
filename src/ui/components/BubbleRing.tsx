@@ -260,7 +260,7 @@ const st = StyleSheet.create({
   centerBub: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "#ff3b30", borderWidth: 1, borderColor: "#ff3b30",
+    backgroundColor: theme.danger, borderWidth: 1, borderColor: theme.danger,
   },
   centerTxt: { fontSize: 13, fontWeight: "700", color: "#fff" },
   bub: {
