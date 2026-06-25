@@ -58,13 +58,14 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
       <View style={st.header}>
         <Pressable onPress={() => setYear(y => y - 1)} style={st.navBtn}>
           <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
+          <Text style={[st.yearTitle, year === now.getFullYear() && { color: "#ff3b30" }]}>{year}</Text>
         </Pressable>
-        <Text style={st.yearTitle}>{year}</Text>
         <Pressable
           onPress={() => setYear(y => y + 1)}
           style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]}
           disabled={year >= now.getFullYear()}
         >
+          <Text style={[st.yearTitle, year + 1 === now.getFullYear() && { color: "#ff3b30" }]}>{year + 1}</Text>
           <View style={st.iconCircle}><Ionicons name="chevron-forward" size={14} color={theme.fg} /></View>
         </Pressable>
       </View>
@@ -82,13 +83,13 @@ const st = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
-  yearTitle: { fontSize: 15, fontWeight: "600", color: theme.fg, width: 50, textAlign: "center" },
-  navBtn: {},
+  yearTitle: { fontSize: 16, fontWeight: "600", color: theme.fg },
+  navBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   navDisabled: { opacity: 0.3 },
   grid: {
     flexDirection: "row",
