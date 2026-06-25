@@ -125,7 +125,7 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   miniToday: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.danger,
     borderRadius: 10,
   },
   miniHasEntry: {
@@ -133,5 +133,5 @@ const st = StyleSheet.create({
     borderRadius: 10,
   },
   miniDayTxt: { fontSize: 7, color: theme.fgMuted },
-  miniTodayTxt: { color: "#000", fontWeight: "700" },
+  miniTodayTxt: { color: "#fff", fontWeight: "700" },
 });

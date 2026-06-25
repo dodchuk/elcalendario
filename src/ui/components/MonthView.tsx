@@ -383,7 +383,7 @@ const st = StyleSheet.create({
   },
   cellToday: { backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8 },
   cellFuture: { opacity: 0.3 },
-  cellOpen: { zIndex: 10, overflow: "visible" },
+  cellOpen: { zIndex: 10, overflow: "visible", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8 },
   cellSkeleton: { opacity: 0.3 },
   skeletonDay: { width: 20, height: 8, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.08)" },
   dateNum: {
