@@ -258,11 +258,11 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   centerBub: {
-    width: 24, height: 24, borderRadius: 12,
+    width: 28, height: 28, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
     backgroundColor: "#ff3b30", borderWidth: 1, borderColor: "#ff3b30",
   },
-  centerTxt: { fontSize: 12, fontWeight: "700", color: "#fff" },
+  centerTxt: { fontSize: 13, fontWeight: "700", color: "#fff" },
   bub: {
     width: R * 2, height: R * 2, borderRadius: R,
     alignItems: "center", justifyContent: "center",
