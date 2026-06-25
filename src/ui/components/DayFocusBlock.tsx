@@ -102,12 +102,12 @@ const st = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "#E1FF05",
+    borderColor: "#ff3b30",
   },
   monthLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#E1FF05",
+    color: "#ff3b30",
   },
   grid: {
     flexDirection: "row",

@@ -6,7 +6,7 @@ import { getEmojiGlowColor } from "../theme/tagColors";
 
 type Bubble = { id: string; emoji: string; active: boolean; time?: string };
 const R = 21;
-const GAP = 14;
+const GAP = 18;
 const MIN_DIST = R * 2 + GAP;
 const SW = Math.min(Dimensions.get("window").width, 393);
 const SH = Math.min(Dimensions.get("window").height, 852);

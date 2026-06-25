@@ -13,7 +13,7 @@ function pad(n: number) { return n.toString().padStart(2, "0"); }
 
 type Props = { onSelectMonth: (year: number, month: number) => void; initialYear?: number; onYearChange?: (year: number) => void };
 
-function MiniMonth({ year, month, onPress }: { year: number; month: number; onPress: () => void }) {
+function MiniMonth({ year, month, onPress }: { year: number; month: number; onPress?: () => void }) {
   const { state } = useStore();
   const { settings } = useSettings();
   const total = daysIn(year, month);
@@ -22,7 +22,7 @@ function MiniMonth({ year, month, onPress }: { year: number; month: number; onPr
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
 
   return (
-    <Pressable style={st.monthBlock} onPress={onPress}>
+    <Pressable style={[st.monthBlock, !onPress && { opacity: 0.3 }]} onPress={onPress} disabled={!onPress}>
       <Text style={[st.monthLabel, isCurrentMonth && st.monthLabelCurrent]}>{MONTHS[month]}</Text>
       <View style={st.miniGrid}>
         {Array.from({ length: offset }, (_, i) => <View key={`e${i}`} style={st.miniEmpty} />)}
@@ -56,10 +56,15 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
   return (
     <View style={st.container}>
       <View style={st.header}>
-        <Pressable onPress={() => setYear(y => y - 1)} style={st.navBtn}>
+        <Pressable onPress={() => setYear(y => y - 1)} style={[st.navBtn, { zIndex: 10 }]}>
           <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
-          <Text style={[st.yearTitle, year === now.getFullYear() && { color: "#ff3b30" }]}>{year}</Text>
+          <Text style={[st.yearTitle, year - 1 === now.getFullYear() && { color: "#ff3b30" }]}>{year - 1}</Text>
         </Pressable>
+        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
+          <View style={[st.yearBadge, year === now.getFullYear() && st.yearBadgeCurrent]}>
+            <Text style={[st.headerCenter, year === now.getFullYear() && { color: "#ff3b30" }]}>{year}</Text>
+          </View>
+        </View>
         <Pressable
           onPress={() => setYear(y => y + 1)}
           style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]}
@@ -71,7 +76,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
       </View>
       <ScrollView contentContainerStyle={st.grid}>
         {Array.from({ length: 12 }, (_, m) => (
-          <MiniMonth key={m} year={year} month={m} onPress={() => onSelectMonth(year, m)} />
+          <MiniMonth key={m} year={year} month={m} onPress={year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth()) ? undefined : () => onSelectMonth(year, m)} />
         ))}
       </ScrollView>
     </View>
@@ -89,6 +94,9 @@ const st = StyleSheet.create({
   },
   iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
   yearTitle: { fontSize: 16, fontWeight: "600", color: theme.fg },
+  headerCenter: { fontSize: 17, fontWeight: "700", color: theme.fg },
+  yearBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  yearBadgeCurrent: { borderColor: "#ff3b30" },
   navBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   navDisabled: { opacity: 0.3 },
   grid: {

@@ -34,7 +34,7 @@ function Main() {
   const { state } = useStore();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
-  const [calMonth, setCalMonth] = useState<number | null>(null);
+  const [calMonth, setCalMonth] = useState<number | null>(new Date().getMonth());
   const [filter, setFilter] = useState<string[]>([]);
   const [streakRange, setStreakRange] = useState<{ start: string; end: string } | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
