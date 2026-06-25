@@ -380,6 +380,7 @@ const st = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
+    borderRadius: 8,
   },
   cellToday: { backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8 },
   cellFuture: { opacity: 0.3 },

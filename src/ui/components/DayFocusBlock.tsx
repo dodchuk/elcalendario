@@ -67,12 +67,9 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
     }
 
     return (
-      <Pressable key={d} style={st.cell} onPress={() => {
-        const ds = `${date.split("-")[0]}-${date.split("-")[1]}-${String(d).padStart(2, "0")}`;
-        onSelectDate?.(ds);
-      }}>
+      <View key={d} style={st.cell}>
         <View style={st.skeleton} />
-      </Pressable>
+      </View>
     );
   });
 
@@ -120,6 +117,7 @@ const st = StyleSheet.create({
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 8,
   },
   selectedCell: {
     overflow: "visible",
@@ -129,9 +127,11 @@ const st = StyleSheet.create({
   },
   centerTap: {
     position: "absolute",
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8,
     zIndex: 1000,
   },
   skeleton: {
