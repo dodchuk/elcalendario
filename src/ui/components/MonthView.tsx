@@ -107,9 +107,7 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
                 const gridWidth = SW - 32; // 16px padding each side
                 const cellW = gridWidth * 0.135;
                 const cellX = 16 + col * (cellW + 2) + cellW / 2;
-                // Estimate screen Y: header ~80px, row position within visible area
-                const cellY = 80 + (row + 0.5) * (cellSize + 2);
-                const screenY = openDate ? Math.min(cellY, SH * 0.4) : cellY;
+                const cellY = 40 + (row + 0.5) * (cellSize + 2);
                 return (
                   <BubbleRing
                     key={ds}
@@ -118,8 +116,8 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
                     col={col}
                     row={row}
                     label={String(d)}
-                    screenPos={{ x: cellX, y: screenY }}
-                    visibleHeight={timelineOpen ? SH * 0.5 : SH}
+                    screenPos={{ x: cellX, y: cellY }}
+                    visibleHeight={340}
                     onToggle={id => dispatch({ type: "TOGGLE_EMOJI", date: ds, tagId: id })}
                   />
                 );
@@ -379,7 +377,6 @@ const st = StyleSheet.create({
   cell: {
     width: "13.5%",
     aspectRatio: 1,
-    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",

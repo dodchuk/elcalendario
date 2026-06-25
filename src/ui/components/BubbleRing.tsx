@@ -11,32 +11,40 @@ const MIN_DIST = R * 2 + GAP;
 const SW = Math.min(Dimensions.get("window").width, 393);
 const SH = Math.min(Dimensions.get("window").height, 852);
 
-function flowerPos(i: number, n: number, ringR: number, col: number, row: number, sp?: { x: number; y: number }) {
+function flowerPos(i: number, n: number, ringR: number, col: number, row: number, sp?: { x: number; y: number }, visibleHeight?: number) {
   const orbitR = Math.max(R * 2 + GAP, ringR * 0.55, n <= 2 ? R * 3 : 0);
 
   // First column: half circle on right side only
   if (col === 0) {
+    const wideR = orbitR * 2.2;
     const angle = -Math.PI / 2 + (Math.PI * i) / Math.max(n - 1, 1);
-    const top = sp ? sp.y - 80 - R * 2 : 100;
+    const top = sp ? sp.y - R * 2 : 100;
+    const bottom = sp ? (visibleHeight ?? SH) - sp.y - R * 2 : SH - 200;
+    let x = Math.abs(Math.cos(angle)) * wideR;
     let y = Math.sin(angle) * orbitR;
     if (top < orbitR && y < 0) y = Math.abs(y);
-    return { x: Math.cos(angle) * orbitR, y };
+    if (bottom < orbitR && y > 0) y = -Math.abs(y);
+    return { x, y };
   }
 
   // Last column: half circle on left side only
   if (col === 6) {
+    const wideR = orbitR * 2.2;
     const angle = Math.PI / 2 + (Math.PI * i) / Math.max(n - 1, 1);
-    const top = sp ? sp.y - 80 - R * 2 : 100;
+    const top = sp ? sp.y - R * 2 : 100;
+    const bottom = sp ? (visibleHeight ?? SH) - sp.y - R * 2 : SH - 200;
+    let x = -Math.abs(Math.cos(angle)) * wideR;
     let y = Math.sin(angle) * orbitR;
     if (top < orbitR && y < 0) y = Math.abs(y);
-    return { x: Math.cos(angle) * orbitR, y };
+    if (bottom < orbitR && y > 0) y = -Math.abs(y);
+    return { x, y };
   }
 
   // Other columns: full circle with space-aware flipping
-  const left = sp ? sp.x - 20 - R * 2 : (col + 0.5) * (SW / 7) - 20;
-  const right = sp ? SW - sp.x - 20 - R * 2 : SW - (col + 0.5) * (SW / 7) - 20;
-  const top = sp ? sp.y - 80 - R * 2 : 100;
-  const bottom = sp ? SH - sp.y - 20 - R * 2 : SH - 200;
+  const left = sp ? sp.x - R * 2 : (col + 0.5) * (SW / 7);
+  const right = sp ? SW - sp.x - R * 2 : SW - (col + 0.5) * (SW / 7);
+  const top = sp ? sp.y - R * 2 : 100;
+  const bottom = sp ? (visibleHeight ?? SH) - sp.y - R * 2 : SH - 200;
 
   const angle = (2 * Math.PI * i) / n - Math.PI / 2;
   let x = Math.cos(angle) * orbitR;
@@ -101,15 +109,15 @@ export default function BubbleRing({ bubbles, ringR, onToggle, col = 3, row = 2,
   const n = bubbles.length;
 
   const makeHomes = (r: number) =>
-    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col, row, screenPos));
+    all.map((_, i) => i === 0 && label ? { x: 0, y: 0 } : flowerPos(label ? i - 1 : i, n, r, col, row, screenPos, visibleHeight));
 
   const homes = makeHomes(ringR);
 
   // Walls: 20px from screen edges (absolute, not relative to calendar)
-  const bL = screenPos ? screenPos.x - 20 : (col + 0.5) * (SW / 7) - 20;
-  const bR = screenPos ? SW - screenPos.x - 20 : SW - (col + 0.5) * (SW / 7) - 20;
-  const bT = screenPos ? screenPos.y - 80 : ringR * 1.2;
-  const bB = screenPos ? (visibleHeight ?? SH) - screenPos.y - 20 : ringR * 1.2;
+  const bL = screenPos ? screenPos.x - 16 : (col + 0.5) * (SW / 7);
+  const bR = screenPos ? SW - screenPos.x - 16 : SW - (col + 0.5) * (SW / 7);
+  const bT = screenPos ? screenPos.y : ringR * 1.2;
+  const bB = screenPos ? (visibleHeight ?? SH) - screenPos.y : ringR * 1.2;
 
   // Clamp homes to stay within walls (bubble edge never touches wall)
   const safeHomes = homes.map(h => ({
@@ -234,6 +242,7 @@ const st = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 999,
   },
   bubWrap: {
     position: "absolute",

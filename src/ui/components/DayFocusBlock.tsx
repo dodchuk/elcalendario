@@ -32,16 +32,11 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
   const cellW = blockW / 7;
   // Cell center position within this block
   const cellX = 16 + (col + 0.5) * cellW;
-  const cellY = 80 + 16 + (row + 0.5) * cellW; // 80 header + 16 padding
+  const cellY = 40 + (row + 0.5) * cellW; // badge(24) + padding(16) + row offset
 
-  // Boundaries: distance from cell center to block edges
-  // BubbleRing uses these to keep emojis inside this block
-  const screenPos = {
-    x: cellX,
-    y: cellY,
-  };
-  // Use full screen height for boundaries (overflow is visible)
-  const visibleH = SH;
+  const screenPos = { x: cellX, y: cellY };
+  // Constrain to fit within a 360px block (like monthSection)
+  const visibleH = 340;
 
   const cells = Array.from({ length: totalDays + offset }, (_, i) => {
     const isOffset = i < offset;
@@ -126,14 +121,14 @@ const st = StyleSheet.create({
   },
   selectedCell: {
     overflow: "visible",
-    zIndex: 10,
+    zIndex: 999,
   },
   centerTap: {
     position: "absolute",
     width: 28,
     height: 28,
     borderRadius: 14,
-    zIndex: 20,
+    zIndex: 1000,
   },
   skeleton: {
     width: 20,
