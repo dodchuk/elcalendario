@@ -103,6 +103,7 @@ const st = StyleSheet.create({
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     marginBottom: 8,
   },
   monthBadge: {

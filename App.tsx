@@ -52,9 +52,7 @@ function Main() {
       {tab !== "profile" && (
       <View style={[st.appHeader, tab === "emojis" && { backgroundColor: "#000" }]}>
         <View style={st.logoSkeleton} />
-        <Pressable onPress={() => { setPrevTab(tab); setTab("profile"); }} style={st.profileBtn}>
-          <Ionicons name="person-outline" size={18} color={theme.fg} />
-        </Pressable>
+        <View style={{ width: 32 }} />
       </View>
       )}
 
@@ -85,6 +83,16 @@ function Main() {
 
       {/* Bottom tab bar */}
       <View style={st.tabBar}>
+        <Pressable style={st.tab} onPress={() => { setTab("calendar"); }}>
+          <View style={[st.tabBubble, tab === "calendar" && st.tabBubbleActive]}>
+            <Ionicons name={tab === "calendar" ? "calendar" : "calendar-outline"} size={22} color={tab === "calendar" ? "#fff" : theme.fgMuted} />
+          </View>
+        </Pressable>
+        <Pressable style={st.tab} onPress={() => { setTab("dashboard"); }}>
+          <View style={[st.tabBubble, tab === "dashboard" && st.tabBubbleActive]}>
+            <Ionicons name={tab === "dashboard" ? "stats-chart" : "stats-chart-outline"} size={22} color={tab === "dashboard" ? "#fff" : theme.fgMuted} />
+          </View>
+        </Pressable>
         <Pressable style={st.tab} onPress={() => { setTab("emojis"); }}>
           <View style={{ position: "relative" }}>
             <View style={[st.tabBubble, tab === "emojis" && st.tabBubbleActive]}>
@@ -92,18 +100,11 @@ function Main() {
             </View>
             <View style={st.tabCountBadge}><Text style={st.tabCountTxt}>{state.tags.length}</Text></View>
           </View>
-          <Text style={[st.tabLabel, tab === "emojis" && st.tabLabelActive]}>Emojis</Text>
         </Pressable>
-        <Pressable style={st.tabCenter} onPress={() => { setTab("calendar"); }}>
-          <View style={[st.tabCenterCircle, tab === "calendar" && st.tabCenterActive]}>
-            <Ionicons name={tab === "calendar" ? "calendar" : "calendar-outline"} size={28} color={tab === "calendar" ? "#fff" : theme.fgMuted} />
+        <Pressable style={st.tab} onPress={() => { setPrevTab(tab); setTab("profile"); }}>
+          <View style={[st.tabBubble, tab === "profile" && st.tabBubbleActive]}>
+            <Ionicons name={tab === "profile" ? "person" : "person-outline"} size={22} color={tab === "profile" ? "#fff" : theme.fgMuted} />
           </View>
-        </Pressable>
-        <Pressable style={st.tab} onPress={() => { setTab("dashboard"); }}>
-          <View style={[st.tabBubble, tab === "dashboard" && st.tabBubbleActive]}>
-            <Ionicons name={tab === "dashboard" ? "stats-chart" : "stats-chart-outline"} size={22} color={tab === "dashboard" ? "#fff" : theme.fgMuted} />
-          </View>
-          <Text style={[st.tabLabel, tab === "dashboard" && st.tabLabelActive]}>Dashboard</Text>
         </Pressable>
       </View>
     </View>
@@ -310,24 +311,24 @@ const st = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   tabBar: {
+    position: "absolute",
+    bottom: 20,
+    left: 40,
+    right: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-evenly",
     paddingVertical: 10,
     paddingHorizontal: 12,
-    marginHorizontal: 80,
-    marginBottom: 20,
     borderRadius: 99,
     backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: 0.5,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.12)",
   },
   tab: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    paddingVertical: 6,
-    minWidth: 60,
+    flex: 1,
   },
   tabBubble: {
     width: 42, height: 42, borderRadius: 21,
@@ -339,11 +340,7 @@ const st = StyleSheet.create({
     shadowRadius: 12,
   },
   tabBubbleActive: {
-    backgroundColor: "rgba(255,100,0,0.5)",
-    shadowColor: "#ff6400",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 14,
+    backgroundColor: theme.danger,
   },
   tabIcon: { fontSize: 18, color: theme.fgMuted },
   tabIconActive: { color: theme.fg },
