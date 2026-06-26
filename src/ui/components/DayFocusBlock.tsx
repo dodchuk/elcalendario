@@ -79,7 +79,7 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
   return (
     <View style={st.container}>
       <View style={st.monthBadge}>
-        <Text style={st.monthLabel}>{(() => { const now = new Date(); return day === now.getDate() && mo - 1 === now.getMonth() && yr === now.getFullYear() ? "Today" : `${day} ${MONTHS[mo - 1]} ${yr}`; })()}</Text>
+        <Text style={st.monthLabel}>{MONTHS[mo - 1]} {yr}</Text>
       </View>
       <View style={st.grid}>{cells}</View>
     </View>
@@ -97,14 +97,14 @@ const st = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: theme.danger,
+    backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: theme.danger,
   },
   monthLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#fff",
+    color: theme.danger,
   },
   grid: {
     flexDirection: "row",

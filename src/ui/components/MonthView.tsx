@@ -252,8 +252,10 @@ export default function MonthView({ initialYear, initialMonth, onBack, onMonthCh
             if (idx >= 0) listRef.current?.scrollToOffset({ offset: idx * 360, animated: false });
             closeDayPage();
           } : undefined} disabled={!showTimeline} style={{ flexDirection: "row", alignItems: "center" }}>
-            {showTimeline && <View style={[st.iconCircle, { position: "absolute", left: -28 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>}
-            <Text style={st.headerTitle}>{MONTHS[showTimeline && displayDate ? Number(displayDate.split("-")[1]) - 1 : visibleMonth]}</Text>
+            {showTimeline && <View style={[st.iconCircle, { marginRight: 6 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>}
+            <View style={showTimeline ? st.headerDateBadge : undefined}>
+              <Text style={[st.headerTitle, showTimeline && { color: "#fff" }]}>{showTimeline && displayDate ? (() => { const now = new Date(); const [y,m,d] = displayDate.split("-").map(Number); return d === now.getDate() && m-1 === now.getMonth() && y === now.getFullYear() ? "Today" : `${d} ${MONTHS[m-1]} ${y}`; })() : MONTHS[visibleMonth]}</Text>
+            </View>
           </Pressable>
         </View>
         <View style={{ alignItems: "flex-end" }}>
@@ -333,7 +335,8 @@ const st = StyleSheet.create({
   backBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
   backTxt: { fontSize: 16, color: theme.fg, fontWeight: "600" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: theme.fg },
+  headerTitle: { fontSize: 14, fontWeight: "600", color: theme.fg },
+  headerDateBadge: { backgroundColor: theme.danger, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   dayRow: {
     flexDirection: "row",
     paddingHorizontal: 16,
