@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, Dimensions } from "react-native";
+import Animated, { FadeInLeft, FadeOutLeft } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import ChevronIcon from "./ChevronIcon";
 import { useStore } from "../../application/StoreContext";
 import BubbleRing from "./BubbleRing";
 import { theme } from "../theme/colors";
@@ -79,12 +81,14 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
 
   return (
     <View style={st.container}>
+      <Animated.View entering={FadeInLeft.springify().damping(12)} exiting={FadeOutLeft.duration(200)}>
       <Pressable onPress={onBack} style={st.monthRow}>
-        <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
+        <ChevronIcon direction="left" />
         <View style={st.monthBadge}>
-          <Text style={st.monthLabel}>{(() => { const now = new Date(); return day === now.getDate() && mo - 1 === now.getMonth() && yr === now.getFullYear() ? "Today" : `${day} ${MONTHS[mo - 1]} ${yr}`; })()}</Text>
+          <Text style={st.monthLabel}>{MONTHS[mo - 1]} {yr}</Text>
         </View>
       </Pressable>
+      </Animated.View>
       <View style={st.grid}>{cells}</View>
     </View>
   );

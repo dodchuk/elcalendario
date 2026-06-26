@@ -1,12 +1,13 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, FlatList, Dimensions } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, FadeInLeft } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useStore } from "../../application/StoreContext";
 import { useSettings } from "../../application/SettingsContext";
 import { todayStr } from "../../domain/calendarReducer";
 import BubbleRing from "./BubbleRing";
 import DayFocusBlock from "./DayFocusBlock";
+import ChevronIcon from "./ChevronIcon";
 import DayTimeline from "./DayTimeline";
 import { theme } from "../theme/colors";
 import { getEmojiGlowColor } from "../theme/tagColors";
@@ -51,9 +52,9 @@ function MonthBlock({ year, month, openDate, onSelectDate, timelineOpen, isActiv
   return (
     <View style={st.monthSection}>
       {!timelineOpen && (
-        <View style={[st.monthBadge, isActive && st.monthBadgeActive]}>
+        <Animated.View entering={FadeInLeft.springify().damping(12)} style={[st.monthBadge, isActive && st.monthBadgeActive]}>
           <Text style={[st.monthTitle, isActive && st.monthTitleActive]}>{MONTHS[month]} {year}</Text>
-        </View>
+        </Animated.View>
       )}
       <View style={st.grid}>
         {Array.from({ length: offset }, (_, i) => <View key={`e${i}`} style={st.emptyCell} />)}
@@ -242,7 +243,7 @@ export default function MonthView({ initialYear, initialMonth, onBack, onMonthCh
       {/* Fixed header */}
       <View style={st.header}>
         <Pressable onPress={() => onBack(visibleYear)} style={[st.backBtn, { zIndex: 10 }]}>
-          <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
+          <ChevronIcon direction="left" />
           <Text style={st.backTxt}>{showTimeline && displayDate ? displayDate.split("-")[0] : visibleYear}</Text>
         </Pressable>
         <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="box-none">
@@ -252,7 +253,7 @@ export default function MonthView({ initialYear, initialMonth, onBack, onMonthCh
             if (idx >= 0) listRef.current?.scrollToOffset({ offset: idx * 360, animated: false });
             closeDayPage();
           } : undefined} disabled={!showTimeline} style={{ flexDirection: "row", alignItems: "center" }}>
-            {showTimeline && <View style={[st.iconCircle, { position: "absolute", left: -28 }]}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>}
+            {showTimeline && <View style={{ position: "absolute", left: -28 }}><ChevronIcon direction="left" /></View>}
             <Text style={st.headerTitle}>{MONTHS[showTimeline && displayDate ? Number(displayDate.split("-")[1]) - 1 : visibleMonth]}</Text>
           </Pressable>
         </View>

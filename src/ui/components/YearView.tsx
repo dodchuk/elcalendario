@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import ChevronIcon from "./ChevronIcon";
 import { useStore } from "../../application/StoreContext";
 import { useSettings } from "../../application/SettingsContext";
 import { theme } from "../theme/colors";
@@ -57,7 +58,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
     <View style={st.container}>
       <View style={st.header}>
         <Pressable onPress={() => setYear(y => y - 1)} style={[st.navBtn, { zIndex: 10 }]}>
-          <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
+          <ChevronIcon direction="left" />
           <Text style={[st.yearTitle, year - 1 === now.getFullYear() && { color: theme.danger }]}>{year - 1}</Text>
         </Pressable>
         <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
@@ -71,7 +72,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
           disabled={year >= now.getFullYear()}
         >
           <Text style={[st.yearTitle, year + 1 === now.getFullYear() && { color: theme.danger }]}>{year + 1}</Text>
-          <View style={st.iconCircle}><Ionicons name="chevron-forward" size={14} color={theme.fg} /></View>
+          <ChevronIcon direction="right" />
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={st.grid}>
