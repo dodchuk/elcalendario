@@ -46,7 +46,7 @@ function Main() {
 
   return (
     <View style={st.main}>
-      {tab === "calendar" && <LavaBg />}
+
       <ScreenProgressBar active={loading} />
       {/* Header */}
       {tab !== "profile" && (
@@ -281,7 +281,7 @@ const st = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#000",
   },
-  root: { flex: 1, width: 393, maxWidth: 393, height: 852, maxHeight: 852, overflow: "hidden", borderRadius: 20 },
+  root: { flex: 1, width: 393, maxWidth: 393, height: 852, maxHeight: 852, overflow: "hidden", borderRadius: 20, backgroundColor: "#000" },
   container: { flex: 1, backgroundColor: "#000" },
   main: { flex: 1 },
   body: { flex: 1 },
@@ -311,12 +311,16 @@ const st = StyleSheet.create({
   },
   tabBar: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-around",
-    paddingBottom: 20,
-    paddingTop: 8,
-    paddingHorizontal: 24,
-    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 80,
+    marginBottom: 20,
+    borderRadius: 99,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   tab: {
     alignItems: "center",

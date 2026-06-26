@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, Dimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useStore } from "../../application/StoreContext";
 import BubbleRing from "./BubbleRing";
 import { theme } from "../theme/colors";
@@ -78,9 +79,12 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
 
   return (
     <View style={st.container}>
-      <View style={st.monthBadge}>
-        <Text style={st.monthLabel}>{MONTHS[mo - 1]} {yr}</Text>
-      </View>
+      <Pressable onPress={onBack} style={st.monthRow}>
+        <View style={st.iconCircle}><Ionicons name="chevron-back" size={14} color={theme.fg} /></View>
+        <View style={st.monthBadge}>
+          <Text style={st.monthLabel}>{(() => { const now = new Date(); return day === now.getDate() && mo - 1 === now.getMonth() && yr === now.getFullYear() ? "Today" : `${day} ${MONTHS[mo - 1]} ${yr}`; })()}</Text>
+        </View>
+      </Pressable>
       <View style={st.grid}>{cells}</View>
     </View>
   );
@@ -91,13 +95,16 @@ const st = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
-  monthBadge: {
+  monthRow: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  monthBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 8,
-    backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: theme.danger,
   },
@@ -106,6 +113,7 @@ const st = StyleSheet.create({
     fontWeight: "600",
     color: theme.danger,
   },
+  iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", marginRight: 6 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
