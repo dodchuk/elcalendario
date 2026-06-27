@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { useMemo, useCallback, useState } from "react";
+import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ChevronIcon from "./ChevronIcon";
 import { useStore } from "../../application/StoreContext";
@@ -44,42 +44,51 @@ function MiniMonth({ year, month, onPress }: { year: number; month: number; onPr
 }
 
 export default function YearView({ onSelectMonth, initialYear, onYearChange }: Props) {
-  const [year, setYearLocal] = useState(initialYear ?? new Date().getFullYear());
-  const setYear = (fn: (y: number) => number) => {
-    setYearLocal(prev => {
-      const next = fn(prev);
-      onYearChange?.(next);
-      return next;
-    });
-  };
   const now = new Date();
+  const years = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = now.getFullYear(); y >= now.getFullYear() - 5; y--) arr.push(y);
+    return arr;
+  }, []);
+  const [visibleYear, setVisibleYear] = useState(initialYear ?? now.getFullYear());
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      const y = viewableItems[0].item;
+      setVisibleYear(y);
+      onYearChange?.(y);
+    }
+  }, []);
+
+  const viewabilityConfig = useMemo(() => ({ itemVisiblePercentThreshold: 50 }), []);
 
   return (
     <View style={st.container}>
       <View style={st.header}>
-        <Pressable onPress={() => setYear(y => y - 1)} style={[st.navBtn, { zIndex: 10 }]}>
-          <ChevronIcon direction="left" />
-          <Text style={[st.yearTitle, year - 1 === now.getFullYear() && { color: theme.danger }]}>{year - 1}</Text>
-        </Pressable>
-        <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
-          <View style={[st.yearBadge, year === now.getFullYear() && st.yearBadgeCurrent]}>
-            <Text style={[st.headerCenter, year === now.getFullYear() && { color: theme.danger }]}>{year}</Text>
-          </View>
+        <View style={[st.yearBadge, visibleYear === now.getFullYear() && st.yearBadgeCurrent]}>
+          <Text style={[st.headerCenter, visibleYear === now.getFullYear() && { color: theme.danger }]}>{visibleYear}</Text>
         </View>
-        <Pressable
-          onPress={() => setYear(y => y + 1)}
-          style={[st.navBtn, year >= now.getFullYear() && st.navDisabled]}
-          disabled={year >= now.getFullYear()}
-        >
-          <Text style={[st.yearTitle, year + 1 === now.getFullYear() && { color: theme.danger }]}>{year + 1}</Text>
-          <ChevronIcon direction="right" />
-        </Pressable>
       </View>
-      <ScrollView contentContainerStyle={st.grid}>
-        {Array.from({ length: 12 }, (_, m) => (
-          <MiniMonth key={m} year={year} month={m} onPress={year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth()) ? undefined : () => onSelectMonth(year, m)} />
-        ))}
-      </ScrollView>
+      <FlatList
+        data={years}
+        keyExtractor={item => String(item)}
+        getItemLayout={(_, index) => ({ length: 520, offset: 520 * index, index })}
+        renderItem={({ item: y }) => (
+          <View style={st.yearSection}>
+            <View style={st.grid}>
+              {Array.from({ length: 12 }, (_, m) => (
+                <MiniMonth key={m} year={y} month={m} onPress={y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth()) ? undefined : () => onSelectMonth(y, m)} />
+              ))}
+            </View>
+          </View>
+        )}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={520}
+        decelerationRate="fast"
+        style={{ flex: 1, scrollSnapType: "y mandatory" } as any}
+      />
     </View>
   );
 }
@@ -89,24 +98,29 @@ const st = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingBottom: 29,
   },
-  iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
-  yearTitle: { fontSize: 16, fontWeight: "600", color: theme.fg },
-  yearBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: theme.accent },
-  yearBadgeCurrent: { borderColor: theme.danger },
-  headerCenter: { fontSize: 14, fontWeight: "600", color: theme.accent },
-  navBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-  navDisabled: { opacity: 0.3 },
+  yearTitle: { fontSize: 17, fontWeight: "700", color: theme.fg },
+  yearBadge: { paddingHorizontal: 10, paddingVertical: 4 },
+  yearBadgeCurrent: {},
+  headerCenter: { fontSize: 17, fontWeight: "700", color: theme.accent },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     padding: 8,
-    paddingBottom: 60,
     gap: 8,
   },
+  yearSection: {
+    height: 520,
+    paddingTop: 16,
+    paddingHorizontal: 8,
+    scrollSnapAlign: "start",
+    borderTopWidth: 0.5,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  } as any,
   monthBlock: {
     width: "31%",
     backgroundColor: "rgba(255,255,255,0.04)",
