@@ -63,7 +63,7 @@ export default function YearView({ onSelectMonth, initialYear, onYearChange }: P
         </Pressable>
         <View style={{ position: "absolute", left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
           <View style={[st.yearBadge, year === now.getFullYear() && st.yearBadgeCurrent]}>
-            <Text style={st.headerCenter}>{year}</Text>
+            <Text style={[st.headerCenter, year === now.getFullYear() && { color: theme.danger }]}>{year}</Text>
           </View>
         </View>
         <Pressable
@@ -95,15 +95,16 @@ const st = StyleSheet.create({
   },
   iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
   yearTitle: { fontSize: 16, fontWeight: "600", color: theme.fg },
-  yearBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: theme.danger },
+  yearBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: theme.accent },
   yearBadgeCurrent: { borderColor: theme.danger },
-  headerCenter: { fontSize: 14, fontWeight: "600", color: theme.danger },
+  headerCenter: { fontSize: 14, fontWeight: "600", color: theme.accent },
   navBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   navDisabled: { opacity: 0.3 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     padding: 8,
+    paddingBottom: 60,
     gap: 8,
   },
   monthBlock: {

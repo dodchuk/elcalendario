@@ -189,7 +189,7 @@ export default function TagManager() {
 }
 
 const st = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: "#000" },
+  wrap: { flex: 1, backgroundColor: "#000", paddingBottom: 60 },
   header: {
     flexDirection: "row", alignItems: "center", gap: 8,
     paddingHorizontal: 16, paddingBottom: 12, paddingTop: 8,

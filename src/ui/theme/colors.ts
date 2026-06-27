@@ -12,7 +12,7 @@ export const theme = {
   surfaceInset: "rgba(255,255,255,0.03)",
   surfaceGlass: "rgba(255,255,255,0.08)",
   // Accent — lime yellow green
-  accent: "#a3e635",
+  accent: "#ffffff",
   accentLight: "#bef264",
   accentSubtle: "rgba(163,230,53,0.12)",
   // Borders — liquid glass edges (subtle specular highlights)

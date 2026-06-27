@@ -277,7 +277,7 @@ export default function MonthView({ initialYear, initialMonth, onBack, onMonthCh
         const [oy, om] = displayDate.split("-").map(Number);
         return (
         <Animated.View style={[st.overlay, overlayStyle]}>
-          <View style={{ overflow: "visible", zIndex: 10 }}>
+          <View style={{ height: 360, overflow: "visible", zIndex: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <DayFocusBlock
               day={Number(displayDate.split("-")[2])}
               col={((new Date(oy, om - 1, 1).getDay() - settings.firstDay + 7) % 7 + Number(displayDate.split("-")[2]) - 1) % 7}
@@ -289,7 +289,7 @@ export default function MonthView({ initialYear, initialMonth, onBack, onMonthCh
               onSelectDate={(ds) => { setOpenDate(ds); setDisplayDate(ds); }}
             />
           </View>
-          <Animated.View style={[{ flex: 1, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.08)" }, timelineAnimStyle]}>
+          <Animated.View style={[{ flex: 1, paddingTop: 16, marginBottom: 124 }, timelineAnimStyle]}>
             <DayTimeline date={displayDate} filter={[]} />
           </Animated.View>
         </Animated.View>
@@ -335,8 +335,8 @@ const st = StyleSheet.create({
   iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", paddingRight: 1 },
   backTxt: { fontSize: 16, color: theme.fg, fontWeight: "600" },
   headerTitle: { fontSize: 17, fontWeight: "700", color: theme.fg },
-  headerDateBadge: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.danger, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  headerMonthBadge: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.danger, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  headerDateBadge: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.accent, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  headerMonthBadge: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.accent, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   dayRow: {
     flexDirection: "row",
     paddingHorizontal: 16,
@@ -373,8 +373,8 @@ const st = StyleSheet.create({
   monthSection: { paddingHorizontal: 16, paddingTop: 16, height: 360, backgroundColor: "#000", borderTopWidth: 0.5, borderTopColor: "rgba(255,255,255,0.08)", scrollSnapAlign: "start" } as any,
   monthTitle: { fontSize: 14, fontWeight: "600", color: theme.fgMuted },
   monthBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, backgroundColor: "transparent", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
-  monthBadgeActive: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.danger },
-  monthTitleActive: { color: theme.danger },
+  monthBadgeActive: { backgroundColor: "transparent", borderWidth: 1, borderColor: theme.accent },
+  monthTitleActive: { color: theme.accent },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
   emptyCell: { width: "13.5%", aspectRatio: 1 },
   cell: {

@@ -81,14 +81,13 @@ export default function DayFocusBlock({ day, col, row, totalDays, offset, date, 
 
   return (
     <View style={st.container}>
-      <Animated.View entering={FadeInLeft.springify().damping(12)} exiting={FadeOutLeft.duration(200)}>
+      <View>
       <Pressable onPress={onBack} style={st.monthRow}>
-        <ChevronIcon direction="left" />
         <View style={st.monthBadge}>
           <Text style={st.monthLabel}>{MONTHS[mo - 1]} {yr}</Text>
         </View>
       </Pressable>
-      </Animated.View>
+      </View>
       <View style={st.grid}>{cells}</View>
     </View>
   );
@@ -111,12 +110,12 @@ const st = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.danger,
+    borderColor: theme.accent,
   },
   monthLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.danger,
+    color: theme.accent,
   },
   iconCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", marginRight: 6 },
   grid: {

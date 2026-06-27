@@ -885,7 +885,7 @@ export default function Dashboard({ year: initYear, month: initMonth, initViewMo
 
 const st = StyleSheet.create({
   wrap: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16, paddingBottom: 80 },
   hudRow: { flexDirection: "row", gap: 8, marginTop: 10 },
   hudCard: {
     flex: 1, backgroundColor: "rgba(255,255,255,0.04)",
